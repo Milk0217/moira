@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["r1","r1_dot","r2","r2_dot","r3","r3_dot"],"struct":["DCM","EulerParameter","MRP"],"trait":["Rotation"],"type":["Quaternion"]};

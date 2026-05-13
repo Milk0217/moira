@@ -1,0 +1,265 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="ANISE (Attitude, Navigation, Instrument, Spacecraft, Ephemeris)"><title>anise - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../static.files/rustdoc-b7b9f40b.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="anise" data-themes="" data-resource-suffix="" data-rustdoc-version="1.95.0 (59807616e 2026-04-14)" data-channel="1.95.0" data-search-js="search-63369b7b.js" data-stringdex-js="stringdex-b897f86f.js" data-settings-js="settings-170eb4bf.js" ><script src="../static.files/storage-41dd4d93.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-5013f961.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-044be391.svg"></head><body class="rustdoc mod crate"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><rustdoc-topbar><h2><a href="#">Crate anise</a></h2></rustdoc-topbar><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../anise/index.html">anise</a><span class="version">0.7.0</span></h2></div><div class="sidebar-elems"><ul class="block"><li><a id="all-types" href="all.html">All Items</a></li></ul><section id="rustdoc-toc"><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#anise-attitude-navigation-instrument-spacecraft-ephemeris" title="ANISE (Attitude, Navigation, Instrument, Spacecraft, Ephemeris)">ANISE (Attitude, Navigation, Instrument, Spacecraft, Ephemeris)</a><ul><li><a href="#introduction" title="Introduction">Introduction</a></li><li><a href="#features" title="Features">Features</a></li><li><a href="#usage" title="Usage">Usage</a></li><li><a href="#validation" title="Validation">Validation</a></li><li><a href="#resources--assets" title="Resources / Assets">Resources / Assets</a></li><li><a href="#how-to-guides" title="How-To Guides">How-To Guides</a></li><li><a href="#contributing" title="Contributing">Contributing</a></li><li><a href="#license" title="License">License</a></li><li><a href="#acknowledgements" title="Acknowledgements">Acknowledgements</a></li><li><a href="#contact" title="Contact">Contact</a></li><li><a href="#versioning" title="Versioning">Versioning</a></li></ul></li></ul><h3><a href="#modules">Crate Items</a></h3><ul class="block"><li><a href="#modules" title="Modules">Modules</a></li><li><a href="#macros" title="Macros">Macros</a></li></ul></section><div id="rustdoc-modnav"></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1>Crate <span>anise</span>&nbsp;<button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../src/anise/lib.rs.html#1-107">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><h2 id="anise-attitude-navigation-instrument-spacecraft-ephemeris"><a class="doc-anchor" href="#anise-attitude-navigation-instrument-spacecraft-ephemeris">§</a>ANISE (Attitude, Navigation, Instrument, Spacecraft, Ephemeris)</h2>
+<p>ANISE is a rewrite of the core functionalities of the NAIF SPICE toolkit with enhanced performance, and ease of use, while leveraging Rust’s safety and speed.</p>
+<p>ANISE was used throughout the operations of the Firefly Blue Ghost lunar lander, from launch until successful landing. As such, the library is now considered NASA Technology Readiness Level (TRL) 9.</p>
+<p><a href="https://7ug5imdtt8v.typeform.com/to/qYDB14Hj"><strong>Please fill out our user survey</strong></a></p>
+<h3 id="introduction"><a class="doc-anchor" href="#introduction">§</a>Introduction</h3>
+<p>In the realm of space exploration, navigation, and astrophysics, precise and efficient computation of spacecraft position, orientation, and time is critical. ANISE, standing for “Attitude, Navigation, Instrument, Spacecraft, Ephemeris,” offers a Rust-native approach to these challenges. This toolkit provides a suite of functionalities including but not limited to:</p>
+<ul>
+<li>Loading SPK, BPC, PCK, FK, and TPC files.</li>
+<li>High-precision translations, rotations, and their combination (rigid body transformations).</li>
+<li>Comprehensive time system conversions using the hifitime library (including TT, TAI, ET, TDB, UTC, GPS time, and more).</li>
+</ul>
+<p>ANISE stands validated against the traditional SPICE toolkit, ensuring accuracy and reliability, with translations achieving machine precision (2e-16) and rotations presenting minimal error (less than two arcseconds in the pointing of the rotation axis and less than one arcsecond in the angle about this rotation axis).</p>
+<h3 id="features"><a class="doc-anchor" href="#features">§</a>Features</h3>
+<ul>
+<li><strong>High Precision</strong>: Matches SPICE to machine precision in translations and minimal errors in rotations.</li>
+<li><strong>Time System Conversions</strong>: Extensive support for various time systems crucial in astrodynamics.</li>
+<li><strong>Rust Efficiency</strong>: Harnesses the speed and safety of Rust for space computations.</li>
+<li><strong>Multi-threaded:</strong> Yup! Forget about mutexes and race conditions you’re used to in SPICE, ANISE <em>guarantees</em> that you won’t have any race conditions.</li>
+<li><strong>Frame safety</strong>: ANISE checks all frames translations or rotations are physically valid before performing any computation, even internally.</li>
+<li><strong>Auto-downloading capability</strong>: ANISE simplifies your workflow by automatically downloading the latest Earth orientation parameters, or any other SPICE or ANISE file from a remote location, seamlessly integrating them into the <code>Almanac</code> for immediate use.</li>
+</ul>
+<h3 id="usage"><a class="doc-anchor" href="#usage">§</a>Usage</h3>
+<p>Start using it by adding to your Rust project:</p>
+<div class="example-wrap"><pre class="language-sh"><code>cargo add anise</code></pre></div><h4 id="frame-transformation-of-an-orbit"><a class="doc-anchor" href="#frame-transformation-of-an-orbit">§</a>Frame Transformation of an Orbit</h4>
+<p>ANISE provides the ability to create Cartesian states (also simply called <code>Orbit</code>s), calculate orbital elements from them in an error free way (computations that may fail return a <code>Result</code> type), and transform these states into other frames via the loaded context, called <code>Almanac</code>, which stores all of the SPICE and ANISE files you need.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>anise::prelude::<span class="kw-2">*</span>;
+<span class="comment">// ANISE provides pre-built frames, but examples below show how to build them from their NAIF IDs.
+</span><span class="kw">use </span>anise::constants::frames::{EARTH_ITRF93, EARTH_J2000};
+
+<span class="comment">// Initialize an empty Almanac
+</span><span class="kw">let </span>ctx = Almanac::default();
+
+<span class="comment">// Load a SPK/BSP file
+</span><span class="kw">let </span>spk = SPK::load(<span class="string">"../data/de440.bsp"</span>).unwrap();
+<span class="comment">// Load the high precision ITRF93 kernel
+</span><span class="kw">let </span>bpc = BPC::load(<span class="string">"../data/earth_latest_high_prec.bpc"</span>).unwrap();
+<span class="comment">// Build the planetary constants file, which includes the gravitational parameters and the IAU low fidelity rotations
+</span><span class="kw">use </span>anise::naif::kpl::parser::convert_tpc;
+<span class="comment">// Note that the PCK variable can also be serialized to disk to avoid having to rebuild it next time.
+</span><span class="kw">let </span>pck = convert_tpc(<span class="string">"../data/pck00008.tpc"</span>, <span class="string">"../data/gm_de431.tpc"</span>).unwrap();
+
+<span class="comment">// And add all of these to the Almanac context
+</span><span class="kw">let </span>almanac = ctx
+    .with_spk(spk)
+    .with_bpc(bpc)
+    .with_planetary_data(pck);
+
+<span class="comment">// Let's build an orbit
+// Start by grabbing a copy of the frame.
+</span><span class="kw">let </span>eme2k = almanac.frame_from_uid(EARTH_J2000).unwrap();
+
+<span class="comment">// Define an epoch, in TDB, but you may specify UTC, TT, TAI, GPST, and more.
+</span><span class="kw">let </span>epoch = Epoch::from_str(<span class="string">"2021-10-29 12:34:56 TDB"</span>).unwrap();
+
+<span class="comment">// Define the orbit from its Keplerian orbital elements.
+// Note that we must specify the frame of this orbit: ANISE checks all frames are valid before any translation or rotation, even internally.
+</span><span class="kw">let </span>orig_state = Orbit::keplerian(
+    <span class="number">8_191.93</span>, <span class="number">1e-6</span>, <span class="number">12.85</span>, <span class="number">306.614</span>, <span class="number">314.19</span>, <span class="number">99.887_7</span>, epoch, eme2k,
+);
+
+<span class="comment">// Transform that orbit into another frame.
+</span><span class="kw">let </span>state_itrf93 = almanac
+    .transform_to(orig_state, EARTH_ITRF93, <span class="prelude-val">None</span>)
+    .unwrap();
+
+<span class="comment">// The `:x` prints this orbit's Keplerian elements
+</span><span class="macro">println!</span>(<span class="string">"{orig_state:x}"</span>);
+<span class="comment">// The `:X` prints the prints the range, altitude, latitude, and longitude with respect to the planetocentric frame in floating point with units if frame is celestial,
+</span><span class="macro">println!</span>(<span class="string">"{state_itrf93:X}"</span>);
+
+<span class="comment">// Convert back
+</span><span class="kw">let </span>from_state_itrf93_to_eme2k = almanac
+    .transform_to(state_itrf93, EARTH_J2000, Aberration::NONE)
+    .unwrap();
+
+<span class="macro">println!</span>(<span class="string">"{from_state_itrf93_to_eme2k}"</span>);
+
+<span class="comment">// Check that our return data matches the original one exactly
+</span><span class="macro">assert_eq!</span>(orig_state, from_state_itrf93_to_eme2k);</code></pre></div><h4 id="load-and-query-a-pckbpc-file-high-fidelity-rotation"><a class="doc-anchor" href="#load-and-query-a-pckbpc-file-high-fidelity-rotation">§</a>Load and query a PCK/BPC file (high fidelity rotation)</h4>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>anise::prelude::<span class="kw-2">*</span>;
+<span class="kw">use </span>anise::constants::frames::{EARTH_ITRF93, EME2000};
+
+<span class="kw">let </span>pck = <span class="string">"../data/earth_latest_high_prec.bpc"</span>;
+
+<span class="kw">let </span>bpc = BPC::load(pck).unwrap();
+<span class="kw">let </span>almanac = Almanac::from_bpc(bpc);
+
+<span class="comment">// Load the useful frame constants
+</span><span class="kw">use </span>anise::constants::frames::<span class="kw-2">*</span>;
+
+<span class="comment">// Define an Epoch in the dynamical barycentric time scale
+</span><span class="kw">let </span>epoch = Epoch::from_str(<span class="string">"2020-11-15 12:34:56.789 TDB"</span>).unwrap();
+
+<span class="comment">// Query for the DCM
+</span><span class="kw">let </span>dcm = almanac.rotate(EARTH_ITRF93, EME2000, epoch).unwrap();
+
+<span class="macro">println!</span>(<span class="string">"{dcm}"</span>);</code></pre></div><h4 id="load-and-query-a-text-pckkpl-file-low-fidelity-rotation"><a class="doc-anchor" href="#load-and-query-a-text-pckkpl-file-low-fidelity-rotation">§</a>Load and query a text PCK/KPL file (low fidelity rotation)</h4>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>anise::prelude::<span class="kw-2">*</span>;
+<span class="comment">// Load the TPC converter, which will create the ANISE representation too, in ASN1 format, that you may reuse.
+</span><span class="kw">use </span>anise::naif::kpl::parser::convert_tpc;
+
+<span class="comment">// Note that the ASN1 ANISE format for planetary data also stores the gravity parameters, so we must convert both at once into a single ANISE file.
+</span><span class="kw">let </span>planetary_data = convert_tpc(<span class="string">"../data/pck00008.tpc"</span>, <span class="string">"../data/gm_de431.tpc"</span>).unwrap();
+
+<span class="kw">let </span>almanac = Almanac {
+    planetary_data,
+    ..Default::default()
+};
+
+<span class="comment">// Load the useful frame constants
+</span><span class="kw">use </span>anise::constants::frames::<span class="kw-2">*</span>;
+
+<span class="comment">// Define an Epoch in the dynamical barycentric time scale
+</span><span class="kw">let </span>epoch = Epoch::from_str(<span class="string">"2020-11-15 12:34:56.789 TDB"</span>).unwrap();
+
+<span class="comment">// Query for the DCM to the immediate parent
+</span><span class="kw">let </span>dcm = almanac.rotation_to_parent(IAU_VENUS_FRAME, epoch).unwrap();
+
+<span class="macro">println!</span>(<span class="string">"{dcm}"</span>);</code></pre></div><h4 id="load-and-query-an-spkbsp-file-ephemeris"><a class="doc-anchor" href="#load-and-query-an-spkbsp-file-ephemeris">§</a>Load and query an SPK/BSP file (ephemeris)</h4>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>anise::prelude::<span class="kw-2">*</span>;
+<span class="kw">use </span>anise::constants::frames::<span class="kw-2">*</span>;
+
+<span class="kw">let </span>spk = SPK::load(<span class="string">"../data/de440s.bsp"</span>).unwrap();
+<span class="kw">let </span>ctx = Almanac::from_spk(spk);
+
+<span class="comment">// Define an Epoch in the dynamical barycentric time scale
+</span><span class="kw">let </span>epoch = Epoch::from_str(<span class="string">"2020-11-15 12:34:56.789 TDB"</span>).unwrap();
+
+<span class="kw">let </span>state = ctx
+    .translate(
+        VENUS_J2000, <span class="comment">// Target
+        </span>EARTH_MOON_BARYCENTER_J2000, <span class="comment">// Observer
+        </span>epoch,
+        <span class="prelude-val">None</span>,
+    )
+    .unwrap();
+
+<span class="macro">println!</span>(<span class="string">"{state}"</span>);</code></pre></div><h3 id="validation"><a class="doc-anchor" href="#validation">§</a>Validation</h3>
+<p><a href="https://github.com/nyx-space/anise/actions/workflows/rust.yml"><img src="https://github.com/nyx-space/anise/actions/workflows/rust.yml/badge.svg" alt="ANISE Validation" /></a></p>
+<p>ANISE is validated by running the same queries in ANISE and in SPICE (single threaded) in the <em>Validation</em> step linked above. This workflow validates 101,000 BSP queries in the DE440.BSP file, and 7305 queries each frame in the PCK08 file (every day for 20 years), along with thousands of rotations from Earth high precision BPC file.</p>
+<p><strong>Note:</strong> The PCK data comes from the IAU Reports, which publishes angle, angle rate, and angle acceleration data, expressed in centuries past the J2000 reference epoch.
+ANISE uses Hifitime for time conversions. Hifitime’s reliance solely on integers for all time computations eliminates the risk of rounding errors. In contrast, SPICE utilizes floating-point values, which introduces rounding errors in calculations like centuries past J2000. Consequently, you might observe a discrepancy of up to 1 millidegree in rotation angles between SPICE and ANISE. However, this difference is a testament to ANISE’s superior precision.</p>
+<h3 id="resources--assets"><a class="doc-anchor" href="#resources--assets">§</a>Resources / Assets</h3>
+<p>For convenience, Nyx Space provides a few important SPICE files on a public bucket:</p>
+<ul>
+<li><a href="http://public-data.nyxspace.com/anise/de440s.bsp">de440s.bsp</a>: JPL’s latest short-term ephemeris dataset from 1900 until 2050</li>
+<li><a href="http://public-data.nyxspace.com/anise/de440.bsp">de440.bsp</a>: JPL’s latest long-term ephemeris dataset</li>
+<li><a href="http://public-data.nyxspace.com/anise/v0.5/pck08.pca">pck08.pca</a>: planetary constants ANISE (<code>pca</code>) kernel, built from the JPL gravitational data <a href="http://public-data.nyxspace.com/anise/gm_de431.tpc">gm_de431.tpc</a> and JPL’s plantary constants file <a href="http://public-data.nyxspace.com/anise/pck00008.tpc">pck00008.tpc</a></li>
+<li><a href="http://public-data.nyxspace.com/anise/v0.5/pck11.pca">pck11.pca</a>: planetary constants ANISE (<code>pca</code>) kernel, built from the JPL gravitational data <a href="http://public-data.nyxspace.com/anise/gm_de431.tpc">gm_de431.tpc</a> and JPL’s plantary constants file <a href="http://public-data.nyxspace.com/anise/pck00011.tpc">pck00011.tpc</a></li>
+<li><a href="http://public-data.nyxspace.com/anise/v0.5/moon_fk_de440.epa">moon_fk_de440.epa</a>: Euler Parameter ANISE (<code>epa</code>) kernel, built from the JPL Moon Frame Kernel <code>moon_080317.txt</code></li>
+</ul>
+<p>You may load any of these using the <code>load()</code> shortcut that will determine the file type upon loading, e.g. <code>let almanac = Almanac::new("pck08.pca").unwrap();</code> or in Python <code>almanac = Almanac("pck08.pca")</code>. To automatically download remote assets, from the Nyx Cloud or elsewhere, use the MetaAlmanac: <code>almanac = MetaAlmanac("ci_config.dhall").process(true)</code> in Python.</p>
+<h3 id="how-to-guides"><a class="doc-anchor" href="#how-to-guides">§</a>How-To Guides</h3><h4 id="calculate-azimuth-elevation-and-range"><a class="doc-anchor" href="#calculate-azimuth-elevation-and-range">§</a>Calculate Azimuth, Elevation, and Range</h4>
+<p>To calculate the azimuth, elevation, and range of a spacecraft from a ground station, you can use the <code>azimuth_elevation_range_sez</code> function. This function takes the spacecraft’s orbit, the ground station’s orbit, and the desired frames as input.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>anise::prelude::<span class="kw-2">*</span>;
+<span class="kw">use </span>anise::constants::frames::{IAU_EARTH_FRAME, EME2000};
+<span class="kw">use </span>anise::constants::usual_planetary_constants::MEAN_EARTH_ANGULAR_VELOCITY_DEG_S;
+<span class="kw">use </span>hifitime::Epoch;
+<span class="kw">use </span>core::str::FromStr;
+
+<span class="comment">// Define location of DSN DSS-65 in Madrid, Spain
+</span><span class="kw">const </span>DSS65_LATITUDE_DEG: f64 = <span class="number">40.427_222</span>;
+<span class="kw">const </span>DSS65_LONGITUDE_DEG: f64 = <span class="number">4.250_556</span>;
+<span class="kw">const </span>DSS65_HEIGHT_KM: f64 = <span class="number">0.834_939</span>;
+
+<span class="kw">let </span>almanac = MetaAlmanac::latest().unwrap();
+
+<span class="kw">let </span>eme2k = almanac.frame_from_uid(EME2000).unwrap();
+
+<span class="kw">let </span>rx = Orbit::new(
+    <span class="number">58643.769540</span>,
+    -<span class="number">61696.435624</span>,
+    -<span class="number">36178.745722</span>,
+    <span class="number">2.148654</span>,
+    -<span class="number">1.202489</span>,
+    -<span class="number">0.714016</span>,
+    Epoch::from_str(<span class="string">"2023-11-16T13:35:30.231999909 UTC"</span>).unwrap(),
+    eme2k,
+);
+
+<span class="comment">// Build the ground station state
+</span><span class="kw">let </span>tx = Orbit::try_latlongalt(
+    DSS65_LATITUDE_DEG,
+    DSS65_LONGITUDE_DEG,
+    DSS65_HEIGHT_KM,
+    MEAN_EARTH_ANGULAR_VELOCITY_DEG_S,
+    rx.epoch,
+    almanac.frame_from_uid(IAU_EARTH_FRAME).unwrap(),
+)
+.unwrap();
+
+<span class="kw">let </span>aer = almanac
+    .azimuth_elevation_range_sez(rx, tx, <span class="prelude-val">None</span>, <span class="prelude-val">None</span>)
+    .unwrap();
+
+<span class="macro">println!</span>(<span class="string">"{aer}"</span>);</code></pre></div><h4 id="determine-solar-eclipsing"><a class="doc-anchor" href="#determine-solar-eclipsing">§</a>Determine Solar Eclipsing</h4>
+<p>You can determine if a spacecraft is in a solar eclipse using the <code>solar_eclipsing</code> function. This function returns an <code>Occultation</code> enum, which can be <code>Visible</code>, <code>Partial</code>, or <code>Obstructed</code>.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>anise::prelude::<span class="kw-2">*</span>;
+<span class="kw">use </span>anise::constants::frames::EARTH_J2000;
+<span class="kw">use </span>hifitime::Epoch;
+
+<span class="kw">let </span>almanac = Almanac::new(<span class="string">"../data/de440s.bsp"</span>).unwrap().load(<span class="string">"../data/pck08.pca"</span>).unwrap();
+<span class="kw">let </span>epoch = Epoch::from_gregorian_utc_at_midnight(<span class="number">2024</span>, <span class="number">1</span>, <span class="number">1</span>);
+<span class="kw">let </span>eme2k = almanac.frame_from_uid(EARTH_J2000).unwrap();
+<span class="kw">let </span>orbit = Orbit::try_keplerian_altitude(
+    <span class="number">500.0</span>, <span class="number">0.01</span>, <span class="number">1.0</span>, <span class="number">72.0</span>, <span class="number">45.0</span>, <span class="number">270.0</span>, epoch, eme2k,
+).unwrap();
+
+<span class="kw">let </span>occult = almanac
+    .solar_eclipsing(
+        EARTH_J2000,
+        orbit.at_epoch(epoch).expect(<span class="string">"two body prop failed"</span>),
+        <span class="prelude-val">None</span>,
+    )
+    .unwrap();
+
+<span class="macro">println!</span>(<span class="string">"{occult}"</span>);</code></pre></div><h4 id="transform-between-frames"><a class="doc-anchor" href="#transform-between-frames">§</a>Transform Between Frames</h4>
+<p>ANISE allows you to transform an orbit from one frame to another using the <code>transform_to</code> function.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>anise::prelude::<span class="kw-2">*</span>;
+<span class="kw">use </span>anise::constants::frames::{EARTH_ITRF93, EARTH_J2000};
+<span class="kw">use </span>hifitime::Epoch;
+<span class="kw">use </span>core::str::FromStr;
+
+<span class="kw">let </span>almanac = MetaAlmanac::latest().unwrap();
+
+<span class="kw">let </span>eme2k = almanac.frame_from_uid(EARTH_J2000).unwrap();
+<span class="kw">let </span>epoch = Epoch::from_str(<span class="string">"2021-10-29 12:34:56 TDB"</span>).unwrap();
+
+<span class="kw">let </span>orig_state = Orbit::try_keplerian(
+    <span class="number">8_191.93</span>, <span class="number">1e-6</span>, <span class="number">12.85</span>, <span class="number">306.614</span>, <span class="number">314.19</span>, <span class="number">99.887_7</span>, epoch, eme2k,
+).unwrap();
+
+<span class="comment">// Transform that into another frame.
+</span><span class="kw">let </span>state_itrf93 = almanac
+    .transform_to(orig_state, EARTH_ITRF93, Aberration::NONE)
+    .unwrap();
+
+<span class="macro">println!</span>(<span class="string">"{state_itrf93}"</span>);</code></pre></div><h4 id="rotate-between-orientations"><a class="doc-anchor" href="#rotate-between-orientations">§</a>Rotate Between Orientations</h4>
+<p>You can get the rotation matrix between two orientation frames using the <code>rotate</code> function.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>anise::prelude::<span class="kw-2">*</span>;
+<span class="kw">use </span>anise::constants::frames::{EARTH_ITRF93, EME2000};
+<span class="kw">use </span>hifitime::Epoch;
+<span class="kw">use </span>core::str::FromStr;
+
+<span class="kw">let </span>almanac = Almanac::from_bpc(BPC::load(<span class="string">"../data/earth_latest_high_prec.bpc"</span>).unwrap());
+<span class="kw">let </span>epoch = Epoch::from_str(<span class="string">"2019-03-01T04:02:51.0 ET"</span>).unwrap();
+<span class="kw">let </span>dcm = almanac.rotate(EARTH_ITRF93, EME2000, epoch).unwrap();
+
+<span class="macro">println!</span>(<span class="string">"{dcm}"</span>);</code></pre></div><h3 id="contributing"><a class="doc-anchor" href="#contributing">§</a>Contributing</h3>
+<p>Contributions to ANISE are welcome! Whether it’s in the form of feature requests, bug reports, code contributions, or documentation improvements, every bit of help is greatly appreciated.</p>
+<h3 id="license"><a class="doc-anchor" href="#license">§</a>License</h3>
+<p>ANISE is distributed under the Mozilla Public License 2.0 (MPL-2.0), offering a balanced approach to open-source by allowing the use of source code within both open and proprietary software. MPL-2.0 requires that modifications to the covered code be released under the same license, thus ensuring improvements remain open-source. However, it allows the combining of the covered software with proprietary parts, providing flexibility for both academic and commercial integrations.</p>
+<p>For more details, please see the <a href="./LICENSE">full text of the license</a> or read <a href="https://choosealicense.com/licenses/mpl-2.0/">a summary by Github</a>.</p>
+<h3 id="acknowledgements"><a class="doc-anchor" href="#acknowledgements">§</a>Acknowledgements</h3>
+<p>ANISE is heavily inspired by the NAIF SPICE toolkit and its excellent documentation.</p>
+<h3 id="contact"><a class="doc-anchor" href="#contact">§</a>Contact</h3>
+<p>For any inquiries, feedback, or discussions, please <a href="https://github.com/nyx-space/anise/issues">open an issue here</a> or contact the maintainer at christopher.rabotin@gmail.com.</p>
+<h3 id="versioning"><a class="doc-anchor" href="#versioning">§</a>Versioning</h3>
+<p>ANISE abides by the Rust versioning rules for dependencies but not necessarily for dev-dependencies. Please open a ticket if this causes an issue.</p>
+</div></details><h2 id="modules" class="section-header">Modules<a href="#modules" class="anchor">§</a></h2><dl class="item-table"><dt><a class="mod" href="almanac/index.html" title="mod anise::almanac">almanac</a></dt><dt><a class="mod" href="analysis/index.html" title="mod anise::analysis">analysis</a></dt><dt><a class="mod" href="astro/index.html" title="mod anise::astro">astro</a></dt><dt><a class="mod" href="constants/index.html" title="mod anise::constants">constants</a></dt><dt><a class="mod" href="ephemerides/index.html" title="mod anise::ephemerides">ephemerides</a></dt><dt><a class="mod" href="errors/index.html" title="mod anise::errors">errors</a></dt><dt><a class="mod" href="frames/index.html" title="mod anise::frames">frames</a></dt><dt><a class="mod" href="math/index.html" title="mod anise::math">math</a></dt><dt><a class="mod" href="naif/index.html" title="mod anise::naif">naif</a></dt><dt><a class="mod" href="orientations/index.html" title="mod anise::orientations">orientations</a></dt><dt><a class="mod" href="prelude/index.html" title="mod anise::prelude">prelude</a></dt><dt><a class="mod" href="structure/index.html" title="mod anise::structure">structure</a></dt><dt><a class="mod" href="time/index.html" title="mod anise::time">time</a></dt><dd>Re-export of hifitime</dd></dl><h2 id="macros" class="section-header">Macros<a href="#macros" class="anchor">§</a></h2><dl class="item-table"><dt><a class="macro" href="macro.f64_eq.html" title="macro anise::f64_eq">f64_eq</a></dt><dt><a class="macro" href="macro.f64_eq_tol.html" title="macro anise::f64_eq_tol">f64_<wbr>eq_<wbr>tol</a></dt><dt><a class="macro" href="macro.file2heap.html" title="macro anise::file2heap">file2heap</a></dt><dd>Memory maps a file and <strong>copies</strong> the data on the heap prior to returning a pointer to this heap data.</dd><dt><a class="macro" href="macro.file_mmap.html" title="macro anise::file_mmap">file_<wbr>mmap</a></dt><dd>Memory maps a file and <strong>copies</strong> the data on the heap prior to returning a pointer to this heap data.</dd><dt><a class="macro" href="macro.parse_bytes_as.html" title="macro anise::parse_bytes_as">parse_<wbr>bytes_<wbr>as</a></dt></dl></section></div></main></body></html>

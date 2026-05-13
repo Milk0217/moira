@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["Type2ChebyshevRecord","Type2ChebyshevSet"]};

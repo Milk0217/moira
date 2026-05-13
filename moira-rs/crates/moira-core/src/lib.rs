@@ -1,6 +1,10 @@
+pub mod angles;
+pub mod bazi;
+
 use anise::constants::frames::{
     EARTH_J2000, JUPITER_BARYCENTER_J2000, MARS_BARYCENTER_J2000, MERCURY_J2000, MOON_J2000,
-    SATURN_BARYCENTER_J2000, SUN_J2000, VENUS_J2000,
+    NEPTUNE_BARYCENTER_J2000, PLUTO_BARYCENTER_J2000, SATURN_BARYCENTER_J2000, SUN_J2000,
+    URANUS_BARYCENTER_J2000, VENUS_J2000,
 };
 
 use anise::math::cartesian::CartesianState;
@@ -60,7 +64,7 @@ impl HouseData {
 pub struct ShenSha {
     pub name: String,
     pub category: String,
-    pub quality: String, // "吉" or "凶"
+    pub quality: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -71,6 +75,19 @@ pub struct AstrologyData {
     pub aspects: Vec<Aspect>,
     pub houses: Vec<HouseData>,
     pub shen_sha: Vec<ShenSha>,
+    pub ascendant: f64,
+    pub midheaven: f64,
+    pub part_of_fortune: f64,
+    pub bazi: bazi::BaziData,
+    pub shiganhuayao: Vec<(String, String)>,
+    pub ming_zhu: String,
+    pub shen_zhu: String,
+    pub xijige: Vec<(String, String)>,
+    pub xiaoxian_result: (String, usize),
+    pub yuexian_result: (String, usize),
+    pub dongweifeixian_result: Vec<(u32, String, String)>,
+    pub zodiac_type: String,
+    pub ayanamsa: f64,
 }
 
 pub const ASPECT_TYPES: &[(f64, &str)] = &[
@@ -129,6 +146,12 @@ pub fn calculate_obliquity(epoch: &Epoch) -> f64 {
     // 标准 IAU 2006 公式 (单位: 度)
     let eps = 23.4392911111 - 0.0130101997 * t - 5.086e-8 * t.powi(2) + 5.565e-7 * t.powi(3);
     eps.to_radians()
+}
+
+pub fn calculate_precession_offset(epoch: &Epoch) -> f64 {
+    let jd = epoch.to_jde_utc_days();
+    let years_since_j2000 = (jd - 2451545.0) / 365.25;
+    22.438 + years_since_j2000 * 50.256 / 3600.0
 }
 
 pub fn get_body_state(
@@ -203,6 +226,42 @@ pub fn calculate_celestial_body(
     Ok(celestial_body_from_state(&state, body_name, obliquity_rad))
 }
 
+pub fn calculate_body_with_zodiac_type(
+    ctx: &Almanac,
+    target_frame: Frame,
+    observer_frame: Frame,
+    epoch: Epoch,
+    body_name: &str,
+    obliquity_rad: f64,
+    use_sidereal: bool,
+) -> CelestialBodyData {
+    let mut body = calculate_celestial_body(ctx, target_frame, observer_frame, epoch, body_name, obliquity_rad)
+        .unwrap_or_else(|_| CelestialBodyData {
+            name: body_name.to_string(),
+            longitude: 0.0,
+            latitude: 0.0,
+            speed: 0.0,
+            zodiac_sign: ("白羊".to_string(), 0.0),
+            mansion_name: "角".to_string(),
+            mansion_degree: 0.0,
+        });
+    if use_sidereal {
+        let ayanamsa = calculate_precession_offset(&epoch);
+        let mut lon = body.longitude - ayanamsa;
+        if lon < 0.0 {
+            lon += 360.0;
+        }
+        body.longitude = lon;
+        let sign_index = ((lon / 30.0) as usize) % 12;
+        let degree_in_sign = (lon % 30.0).abs();
+        body.zodiac_sign = (ZODIAC_SIGNS[sign_index].to_string(), degree_in_sign);
+        let (m_name, _, m_deg, _) = get_lunar_mansion(lon);
+        body.mansion_name = m_name.to_string();
+        body.mansion_degree = m_deg;
+    }
+    body
+}
+
 fn extra_body(name: &str, longitude: f64) -> ExtraBodyData {
     let (m_name, _, m_deg, _) = get_lunar_mansion(longitude);
     ExtraBodyData {
@@ -266,31 +325,39 @@ pub fn calculate_ziqui(rahu_longitude: f64, sun_longitude: Option<f64>, jupiter_
     extra_body("紫炁", lon)
 }
 
-const ASPECT_ORB: f64 = 0.1;
+pub const DEFAULT_ASPECT_ORB: f64 = 8.0;
 
 pub fn calculate_aspects(
     bodies: &[CelestialBodyData],
     extras: &[ExtraBodyData],
 ) -> Vec<Aspect> {
+    calculate_aspects_with_orb(bodies, extras, DEFAULT_ASPECT_ORB)
+}
+
+pub fn calculate_aspects_with_orb(
+    bodies: &[CelestialBodyData],
+    extras: &[ExtraBodyData],
+    orb: f64,
+) -> Vec<Aspect> {
     let mut aspects = Vec::new();
 
     for (i, b1) in bodies.iter().enumerate() {
         for b2 in bodies.iter().skip(i + 1) {
-            push_aspect(b1.longitude, b2.longitude, &b1.name, &b2.name, &mut aspects);
+            push_aspect(b1.longitude, b2.longitude, &b1.name, &b2.name, &mut aspects, orb);
         }
         for ext in extras {
-            push_aspect(b1.longitude, ext.longitude, &b1.name, &ext.name, &mut aspects);
+            push_aspect(b1.longitude, ext.longitude, &b1.name, &ext.name, &mut aspects, orb);
         }
     }
     aspects
 }
 
-fn push_aspect(lon1: f64, lon2: f64, n1: &str, n2: &str, aspects: &mut Vec<Aspect>) {
+fn push_aspect(lon1: f64, lon2: f64, n1: &str, n2: &str, aspects: &mut Vec<Aspect>, orb: f64) {
     let raw = (lon1 - lon2).abs();
     let angle = if raw > 180.0 { 360.0 - raw } else { raw };
     for &(target, name) in ASPECT_TYPES {
         let diff = (angle - target).abs();
-        if diff <= ASPECT_ORB {
+        if diff <= orb {
             aspects.push(Aspect {
                 point1: n1.to_string(),
                 point2: n2.to_string(),
@@ -339,6 +406,7 @@ pub fn local_sidereal_time(epoch: &Epoch, longitude_deg: f64) -> f64 {
 const BRANCH_NAMES: [&str; 12] =
     ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
 
+
 /// 根据出生年份的地支推算年支神煞
 pub fn calculate_shen_sha(year: i32) -> Vec<ShenSha> {
     let branch = ((year - 1984) % 12 + 12) as usize % 12;
@@ -383,22 +451,64 @@ pub fn calculate_shen_sha(year: i32) -> Vec<ShenSha> {
     list
 }
 
+const TIAN_DE_BY_DAY: [&str; 10] = ["寅", "酉", "巳", "子", "申", "申", "寅", "巳", "巳", "巳"];
+const YUE_DE_BY_DAY: [&str; 10] = ["丙", "申", "壬", "甲", "午", "壬", "丙", "甲", "巳", "壬"];
+const JIN_YU_BY_DAY: [&str; 10] = ["辰", "巳", "未", "申", "丑", "寅", "卯", "亥", "午", "未"];
+const HONG_YAN_BY_DAY: [&str; 10] = ["午", "申", "寅", "亥", "未", "辰", "戌", "酉", "子", "巳"];
+
+const SHEN_SHA_NAMES: [&str; 4] = ["天德", "月德", "金舆", "红艳"];
+
+pub fn calculate_shensha_by_day_stem(day_stem_index: usize) -> Vec<ShenSha> {
+    let idx = day_stem_index % 10;
+    let values = [
+        TIAN_DE_BY_DAY[idx],
+        YUE_DE_BY_DAY[idx],
+        JIN_YU_BY_DAY[idx],
+        HONG_YAN_BY_DAY[idx],
+    ];
+    (0..4)
+        .map(|i| ShenSha {
+            name: format!("{} {}", SHEN_SHA_NAMES[i], values[i]),
+            category: "日干".into(),
+            quality: "吉".into(),
+        })
+        .collect()
+}
+
+const HOUR_SHENSHA: [&str; 12] = [
+    "青龙", "明堂", "天刑", "朱雀", "金匮", "天德",
+    "青龙", "明堂", "天刑", "朱雀", "金匮", "天德",
+];
+
+pub fn calculate_shensha_by_hour_branch(hour_branch_index: usize) -> Vec<ShenSha> {
+    vec![ShenSha {
+        name: format!("{}", HOUR_SHENSHA[hour_branch_index % 12]),
+        category: "时辰".into(),
+        quality: "吉".into(),
+    }]
+}
+
+pub fn calculate_all_shensha(year: i32, month: u8, day_stem_index: usize, hour_branch_index: usize) -> Vec<ShenSha> {
+    let _ = month;
+    let mut result = calculate_shen_sha(year);
+    result.extend(calculate_shensha_by_day_stem(day_stem_index));
+    result.extend(calculate_shensha_by_hour_branch(hour_branch_index));
+    let mut seen_names = Vec::new();
+    result.retain(|s| {
+        if seen_names.contains(&s.name) {
+            false
+        } else {
+            seen_names.push(s.name.clone());
+            true
+        }
+    });
+    result
+}
+
 /// 计算 Ascendant（上升点），Equal House 系统
 pub fn calculate_houses(epoch: &Epoch, latitude: f64, longitude: f64, obliquity_rad: f64) -> Vec<HouseData> {
     let lst = local_sidereal_time(epoch, longitude);
-    let lst_rad = lst.to_radians();
-    let lat_rad = latitude.to_radians();
-    let eps = obliquity_rad;
-
-    // Ascendant 公式
-    let asc_rad = (lst_rad.sin() * eps.cos() + lat_rad.tan() * eps.sin())
-        .atan2(-lst_rad.cos());
-
-    let asc_deg = {
-        let mut d = asc_rad.to_degrees();
-        if d < 0.0 { d += 360.0; }
-        d
-    };
+    let asc_deg = angles::calculate_ascendant(lst, latitude, obliquity_rad);
 
     // Equal House: 每宫 30°
     (0..12)
@@ -415,9 +525,33 @@ pub fn load_almanac(bsp_path: &str) -> Result<Almanac, String> {
     Ok(Almanac::from_spk(spk))
 }
 
-pub fn calculate_chart(ctx: &Almanac, epoch: Epoch, latitude: f64, longitude: f64) -> AstrologyData {
+pub fn calculate_chart(
+    ctx: &Almanac,
+    epoch: Epoch,
+    latitude: f64,
+    longitude: f64,
+    timezone: f64,
+) -> AstrologyData {
     let obliquity_rad = calculate_obliquity(&epoch);
-    let body_frames: [(Frame, &str); 7] = [
+
+    // 本地时间拆分为年月日时（用于八字、福点等）
+    let jd = epoch.to_jde_utc_days();
+    // 本地时间的儒略日 ≈ UTC JDN + timezone / 24
+    let local_jd = jd + timezone as f64 / 24.0;
+    // 简化为公历日期
+    let z = (local_jd + 0.5) as i64;
+    let a = ((z as f64 - 1867216.25) / 36524.25) as i64;
+    let a2 = z + 1 + a - (a / 4);
+    let b = a2 + 1524;
+    let c = ((b as f64 - 122.1) / 365.25) as i64;
+    let d = (365.25 * c as f64) as i64;
+    let e = ((b - d) as f64 / 30.6001) as i64;
+    let day = (b - d - (30.6001 * e as f64) as i64) as u8;
+    let month = if e < 14 { (e - 1) as u8 } else { (e - 13) as u8 };
+    let year = if month > 2 { c as i32 } else { (c - 1) as i32 };
+    // 本地时间的小时
+    let hour = ((local_jd - (local_jd.floor())) * 24.0) as u8;
+    let body_frames: [(Frame, &str); 10] = [
         (SUN_J2000, "太阳"),
         (MOON_J2000, "太阴"),
         (MERCURY_J2000, "水星"),
@@ -425,6 +559,9 @@ pub fn calculate_chart(ctx: &Almanac, epoch: Epoch, latitude: f64, longitude: f6
         (MARS_BARYCENTER_J2000, "火星"),
         (JUPITER_BARYCENTER_J2000, "木星"),
         (SATURN_BARYCENTER_J2000, "土星"),
+        (URANUS_BARYCENTER_J2000, "天王星"),
+        (NEPTUNE_BARYCENTER_J2000, "海王星"),
+        (PLUTO_BARYCENTER_J2000, "冥王星"),
     ];
 
     let mut bodies = Vec::new();
@@ -459,7 +596,33 @@ pub fn calculate_chart(ctx: &Almanac, epoch: Epoch, latitude: f64, longitude: f6
 
     let aspects = calculate_aspects(&bodies, &extra_bodies);
     let houses = calculate_houses(&epoch, latitude, longitude, obliquity_rad);
-    let shen_sha = calculate_shen_sha(epoch.year());
+
+    let lst = local_sidereal_time(&epoch, longitude);
+    let sun_lon_opt = bodies.iter().find(|b| b.name == "太阳").map(|b| b.longitude);
+    let moon_lon_opt = bodies.iter().find(|b| b.name == "太阴").map(|b| b.longitude);
+
+    let (ascendant, midheaven, part_of_fortune) = match (sun_lon_opt, moon_lon_opt) {
+        (Some(sun_lon), Some(moon_lon)) => {
+            let angles = angles::AngleData::new(lst, latitude, obliquity_rad, sun_lon, moon_lon);
+            (angles.ascendant, angles.midheaven, angles.part_of_fortune)
+        }
+        _ => (0.0, 0.0, 0.0),
+    };
+
+    let bazi = bazi::calculate_bazi(year, month, day, hour);
+    let day_stem_index = bazi.day_pillar.stem_index as usize;
+    let hour_branch_index = bazi.hour_pillar.branch_index as usize;
+    let shen_sha = calculate_all_shensha(year, month as u8, day_stem_index, hour_branch_index);
+
+    let shiganhuayao = calculate_shiganhuayao(bazi.day_pillar.stem_index as usize);
+    let asc_branch = ((ascendant / 30.0) as usize) % 12;
+    let hour_branch = bazi.hour_pillar.branch_index as usize;
+    let (ming_zhu, shen_zhu) = calculate_liming_anshen(asc_branch, hour_branch);
+    let xijige = calculate_xijige(bazi.day_pillar.stem_index as usize, &bodies, &extra_bodies);
+
+    let xiaoxian_result = calculate_xiaoxian(asc_branch, 0);
+    let yuexian_result = calculate_yuexian(xiaoxian_result.1, month);
+    let dongweifeixian_result = calculate_dongweifeixian(asc_branch, 0, "阳男阴女");
 
     AstrologyData {
         timestamp: epoch.to_string(),
@@ -468,7 +631,121 @@ pub fn calculate_chart(ctx: &Almanac, epoch: Epoch, latitude: f64, longitude: f6
         aspects,
         houses,
         shen_sha,
+        ascendant,
+        midheaven,
+        part_of_fortune,
+        bazi,
+        shiganhuayao,
+        ming_zhu,
+        shen_zhu,
+        xijige,
+        xiaoxian_result,
+        yuexian_result,
+        dongweifeixian_result,
+        zodiac_type: "回归".to_string(),
+        ayanamsa: calculate_precession_offset(&epoch),
     }
+}
+
+pub fn calculate_shiganhuayao(_day_stem_index: usize) -> Vec<(String, String)> {
+    const STEMS: [&str; 10] = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"];
+    const PAIR_ELEMENTS: [&str; 5] = ["土", "金", "水", "木", "火"];
+    (0..10)
+        .map(|i| (STEMS[i].to_string(), PAIR_ELEMENTS[i % 5].to_string()))
+        .collect()
+}
+
+pub fn calculate_liming_anshen(asc_branch_index: usize, hour_branch_index: usize) -> (String, String) {
+    const MING_ZHU: [&str; 12] = [
+        "贪狼", "巨门", "禄存", "文曲", "廉贞", "武曲",
+        "破军", "武曲", "廉贞", "文曲", "禄存", "巨门",
+    ];
+    let ming_zhu = MING_ZHU[asc_branch_index % 12];
+    let shen_zhu = MING_ZHU[(hour_branch_index + 6) % 12];
+    (ming_zhu.to_string(), shen_zhu.to_string())
+}
+
+pub fn calculate_xijige(
+    day_stem_index: usize,
+    bodies: &[CelestialBodyData],
+    extra_bodies: &[ExtraBodyData],
+) -> Vec<(String, String)> {
+    const STEM_ELEMENT: [usize; 10] = [0, 0, 1, 1, 2, 2, 3, 3, 4, 4];
+
+    fn body_elem(name: &str) -> Option<usize> {
+        match name {
+            "太阳" | "火星" | "冥王星" | "罗睺" => Some(1),
+            "太阴" | "水星" | "海王星" | "月孛" => Some(4),
+            "金星" | "天王星" => Some(3),
+            "木星" | "紫炁" => Some(0),
+            "土星" | "计都" => Some(2),
+            _ => None,
+        }
+    }
+
+    fn relation(day: usize, body: usize) -> &'static str {
+        if day == body {
+            "平"
+        } else if (body + 1) % 5 == day {
+            "喜"
+        } else if (day + 1) % 5 == body {
+            "忌"
+        } else if (body + 2) % 5 == day {
+            "忌"
+        } else {
+            "平"
+        }
+    }
+
+    let day_elem = STEM_ELEMENT[day_stem_index % 10];
+    let mut result = Vec::new();
+
+    for body in bodies {
+        if let Some(e) = body_elem(&body.name) {
+            result.push((body.name.clone(), relation(day_elem, e).to_string()));
+        }
+    }
+    for ext in extra_bodies {
+        if let Some(e) = body_elem(&ext.name) {
+            result.push((ext.name.clone(), relation(day_elem, e).to_string()));
+        }
+    }
+
+    result
+}
+
+pub fn calculate_xiaoxian(asc_branch_index: usize, current_age: u32) -> (String, usize) {
+    let branch_index = (asc_branch_index + current_age as usize) % 12;
+    (BRANCH_NAMES[branch_index].to_string(), branch_index)
+}
+
+pub fn calculate_yuexian(xiaoxian_branch_index: usize, current_month: u8) -> (String, usize) {
+    let branch_index = (xiaoxian_branch_index + current_month as usize - 1) % 12;
+    (BRANCH_NAMES[branch_index].to_string(), branch_index)
+}
+
+const XIAN_NAMES: [&str; 12] = [
+    "命宫", "父母", "福德", "田宅", "官禄", "交友",
+    "迁移", "疾厄", "财帛", "子女", "夫妻", "兄弟",
+];
+
+pub fn calculate_dongweifeixian(asc_branch_index: usize, age: u32, life_direction: &str) -> Vec<(u32, String, String)> {
+    let forward = life_direction == "阳男阴女";
+    let mut result = Vec::with_capacity(12);
+    for i in 0..12 {
+        let period_start_age = age + (i as u32 * 16) / 3;
+        let branch_index = if forward {
+            (asc_branch_index + i) % 12
+        } else {
+            (asc_branch_index + 12 - i) % 12
+        };
+        result.push((
+            period_start_age,
+            XIAN_NAMES[i].to_string(),
+            BRANCH_NAMES[branch_index].to_string(),
+        ));
+    }
+    result
 }
 
 #[cfg(test)]
@@ -656,5 +933,136 @@ mod tests {
             assert!((diff - 30.0).abs() < 0.01, "等宫制每宫应30°, 第{}宫差={}", i+1, diff);
             prev = houses[i].longitude;
         }
+    }
+
+    #[test]
+    fn test_shiganhuayao() {
+        let result = calculate_shiganhuayao(0);
+        assert_eq!(result.len(), 10);
+        assert_eq!(result[0], ("甲".to_string(), "土".to_string()));
+        assert_eq!(result[5], ("己".to_string(), "土".to_string()));
+        assert_eq!(result[1], ("乙".to_string(), "金".to_string()));
+        assert_eq!(result[6], ("庚".to_string(), "金".to_string()));
+    }
+
+    #[test]
+    fn test_liming_anshen() {
+        let (ming, shen) = calculate_liming_anshen(0, 0);
+        assert_eq!(ming, "贪狼");
+        assert_eq!(shen, "破军");
+    }
+
+    #[test]
+    fn test_xijige() {
+        let bodies = vec![
+            CelestialBodyData { name: "太阳".into(), longitude: 0.0, latitude: 0.0, speed: 1.0, zodiac_sign: ("白羊".into(), 0.0), mansion_name: "角".into(), mansion_degree: 0.0 },
+            CelestialBodyData { name: "太阴".into(), longitude: 180.0, latitude: 0.0, speed: 13.0, zodiac_sign: ("天秤".into(), 0.0), mansion_name: "角".into(), mansion_degree: 0.0 },
+            CelestialBodyData { name: "水星".into(), longitude: 0.0, latitude: 0.0, speed: 1.0, zodiac_sign: ("白羊".into(), 0.0), mansion_name: "角".into(), mansion_degree: 0.0 },
+            CelestialBodyData { name: "金星".into(), longitude: 0.0, latitude: 0.0, speed: 1.0, zodiac_sign: ("白羊".into(), 0.0), mansion_name: "角".into(), mansion_degree: 0.0 },
+            CelestialBodyData { name: "火星".into(), longitude: 0.0, latitude: 0.0, speed: 1.0, zodiac_sign: ("白羊".into(), 0.0), mansion_name: "角".into(), mansion_degree: 0.0 },
+            CelestialBodyData { name: "木星".into(), longitude: 0.0, latitude: 0.0, speed: 1.0, zodiac_sign: ("白羊".into(), 0.0), mansion_name: "角".into(), mansion_degree: 0.0 },
+            CelestialBodyData { name: "土星".into(), longitude: 0.0, latitude: 0.0, speed: 1.0, zodiac_sign: ("白羊".into(), 0.0), mansion_name: "角".into(), mansion_degree: 0.0 },
+        ];
+        let extras = vec![
+            ExtraBodyData { name: "天王星".into(), longitude: 0.0, mansion_name: "角".into(), mansion_degree: 0.0 },
+            ExtraBodyData { name: "海王星".into(), longitude: 0.0, mansion_name: "角".into(), mansion_degree: 0.0 },
+            ExtraBodyData { name: "冥王星".into(), longitude: 0.0, mansion_name: "角".into(), mansion_degree: 0.0 },
+            ExtraBodyData { name: "罗睺".into(), longitude: 0.0, mansion_name: "角".into(), mansion_degree: 0.0 },
+            ExtraBodyData { name: "计都".into(), longitude: 0.0, mansion_name: "角".into(), mansion_degree: 0.0 },
+            ExtraBodyData { name: "月孛".into(), longitude: 0.0, mansion_name: "角".into(), mansion_degree: 0.0 },
+            ExtraBodyData { name: "紫炁".into(), longitude: 0.0, mansion_name: "角".into(), mansion_degree: 0.0 },
+        ];
+        let result = calculate_xijige(0, &bodies, &extras);
+        assert_eq!(result.len(), 14);
+        assert!(result.iter().any(|(n, _)| n == "太阳"));
+        assert!(result.iter().any(|(n, _)| n == "紫炁"));
+    }
+
+    #[test]
+    fn test_xiaoxian() {
+        let (name, idx) = calculate_xiaoxian(0, 0);
+        assert_eq!(name, "子");
+        assert_eq!(idx, 0);
+        let (name, idx) = calculate_xiaoxian(0, 1);
+        assert_eq!(name, "丑");
+        assert_eq!(idx, 1);
+        let (name, idx) = calculate_xiaoxian(2, 10);
+        assert_eq!(idx, 0);
+        assert_eq!(name, "子");
+    }
+
+    #[test]
+    fn test_yuexian() {
+        let (name, idx) = calculate_yuexian(0, 1);
+        assert_eq!(name, "子");
+        assert_eq!(idx, 0);
+        let (name, idx) = calculate_yuexian(0, 2);
+        assert_eq!(name, "丑");
+        assert_eq!(idx, 1);
+        let (name, idx) = calculate_yuexian(5, 12);
+        assert_eq!(idx, 4);
+        assert_eq!(name, "辰");
+    }
+
+    #[test]
+    fn test_shensha_by_day_stem() {
+        let result = calculate_shensha_by_day_stem(0);
+        assert!(!result.is_empty(), "日干神煞不应为空");
+        assert_eq!(result.len(), 4);
+        assert!(result.iter().any(|s| s.name.contains("天德")));
+        assert!(result.iter().any(|s| s.name.contains("月德")));
+        assert!(result.iter().any(|s| s.name.contains("红艳")));
+        assert_eq!(result[0].category, "日干");
+    }
+
+    #[test]
+    fn test_shensha_by_day_stem_all() {
+        for i in 0..10 {
+            let r = calculate_shensha_by_day_stem(i);
+            assert_eq!(r.len(), 4, "每个天干应有4个神煞, stem={}", i);
+        }
+    }
+
+    #[test]
+    fn test_shensha_by_hour() {
+        let result = calculate_shensha_by_hour_branch(0);
+        assert!(!result.is_empty(), "时辰神煞不应为空");
+        assert_eq!(result[0].name, "青龙");
+        let result = calculate_shensha_by_hour_branch(6);
+        assert_eq!(result[0].name, "青龙");
+        let result = calculate_shensha_by_hour_branch(3);
+        assert_eq!(result[0].name, "朱雀");
+    }
+
+    #[test]
+    fn test_shensha_by_hour_all() {
+        for i in 0..12 {
+            let r = calculate_shensha_by_hour_branch(i);
+            assert_eq!(r.len(), 1, "每个时辰应有1个神煞, branch={}", i);
+            assert_eq!(r[0].category, "时辰");
+        }
+    }
+
+    #[test]
+    fn test_precession_offset() {
+        let epoch = Epoch::from_tdb_seconds(0.0);
+        let offset = calculate_precession_offset(&epoch);
+        assert!(offset > 0.0 && offset < 360.0, "岁差偏移应在合理范围, 实际={}", offset);
+        assert!(offset > 20.0 && offset < 30.0, "岁差偏移应在~24°附近, 实际={}", offset);
+    }
+
+    #[test]
+    fn test_dongweifeixian() {
+        let result = calculate_dongweifeixian(0, 0, "阳男阴女");
+        assert_eq!(result.len(), 12);
+        assert_eq!(result[0].1, "命宫");
+        assert_eq!(result[0].2, "子");
+        assert_eq!(result[1].1, "父母");
+        assert_eq!(result[1].2, "丑");
+        let result = calculate_dongweifeixian(0, 20, "阴男阳女");
+        assert_eq!(result.len(), 12);
+        assert_eq!(result[0].2, "子");
+        assert_eq!(result[1].2, "亥");
+        assert_eq!(result[2].2, "戌");
     }
 }

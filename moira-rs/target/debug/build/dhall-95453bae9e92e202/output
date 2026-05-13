@@ -1,0 +1,2 @@
+cargo:rerun-if-changed=src/syntax/text/dhall.abnf
+cargo:rerun-if-changed=src/syntax/text/dhall.pest.visibility

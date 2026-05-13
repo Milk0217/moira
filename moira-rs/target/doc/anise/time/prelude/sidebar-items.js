@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["DurationError","Freq","HifitimeError","ParsingError","TimeScale","Unit","Weekday"],"struct":["Duration","Epoch","Format","Formatter","TimeSeries"],"trait":["Frequencies","TimeUnits"]};

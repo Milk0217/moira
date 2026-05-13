@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["chebyshev","chebyshev3","hermite","lagrange","modified_diff","posvel"]};

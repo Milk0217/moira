@@ -1,0 +1,227 @@
+// AUTO-GENERATED FILE. See build.rs.
+missing = { "missing" ~ !simple_label_next_char }
+unicode_escape = _{ HEXDIG{4} | "{" ~ HEXDIG+ ~ "}" }
+simple_label = {
+              keyword ~ simple_label_next_char+
+            | !keyword ~ simple_label_first_char ~ simple_label_next_char*
+    }
+nonreserved_label = _{
+            !(builtin ~ !simple_label_next_char) ~ label
+    }
+
+        import_alt = { "?" ~ whsp1 }
+        bool_or = { "||" }
+        natural_plus = { "+" ~ whsp1 }
+        text_append = { "++" }
+        list_append = { "#" }
+        bool_and = { "&&" }
+        natural_times = { "*" }
+        bool_eq = { "==" }
+        bool_ne = { "!=" }
+
+        operator = _{
+            equivalent |
+            bool_ne |
+            bool_eq |
+            natural_times |
+            combine_types |
+            prefer |
+            combine |
+            bool_and |
+            list_append |
+            text_append |
+            natural_plus |
+            bool_or |
+            import_alt
+        }
+        operator_expression = { application_expression ~ (whsp ~ operator ~ whsp ~ application_expression)* }
+    
+final_expression = ${ SOI ~ complete_expression ~ EOI }
+
+end_of_line = _{ "\u{0A}" | "\u{0D}\u{0A}" }
+valid_non_ascii = _{ '\u{80}'..'\u{D7FF}' | '\u{E000}'..'\u{FFFD}' | '\u{10000}'..'\u{1FFFD}' | '\u{20000}'..'\u{2FFFD}' | '\u{30000}'..'\u{3FFFD}' | '\u{40000}'..'\u{4FFFD}' | '\u{50000}'..'\u{5FFFD}' | '\u{60000}'..'\u{6FFFD}' | '\u{70000}'..'\u{7FFFD}' | '\u{80000}'..'\u{8FFFD}' | '\u{90000}'..'\u{9FFFD}' | '\u{A0000}'..'\u{AFFFD}' | '\u{B0000}'..'\u{BFFFD}' | '\u{C0000}'..'\u{CFFFD}' | '\u{D0000}'..'\u{DFFFD}' | '\u{E0000}'..'\u{EFFFD}' | '\u{F0000}'..'\u{FFFFD}' | '\u{100000}'..'\u{10FFFD}' }
+tab = _{ "\u{09}" }
+block_comment = _{ ^"{-" ~ block_comment_continue }
+block_comment_char = _{ '\u{20}'..'\u{7F}' | valid_non_ascii | tab | end_of_line }
+block_comment_continue = _{ ^"-}" | block_comment ~ block_comment_continue | block_comment_char ~ block_comment_continue }
+not_end_of_line = _{ '\u{20}'..'\u{7F}' | valid_non_ascii | tab }
+line_comment = _{ ^"--" ~ not_end_of_line* ~ end_of_line }
+whitespace_chunk = _{ ^" " | tab | end_of_line | line_comment | block_comment }
+whsp = _{ whitespace_chunk* }
+whsp1 = _{ whitespace_chunk+ }
+ALPHA = _{ 'A'..'Z' | 'a'..'z' }
+DIGIT = _{ '0'..'9' }
+ALPHANUM = _{ ALPHA | DIGIT }
+HEXDIG = _{ DIGIT | ^"A" | ^"B" | ^"C" | ^"D" | ^"E" | ^"F" }
+simple_label_first_char = _{ ALPHA | ^"_" }
+simple_label_next_char = _{ ALPHANUM | ^"-" | ^"/" | ^"_" }
+record_literal_entry = { any_label_or_some ~ (record_literal_normal_entry)? }
+quoted_label_char = _{ '\u{20}'..'_' | 'a'..'~' }
+quoted_label = { quoted_label_char* }
+label = _{ (^"`" ~ quoted_label ~ ^"`" | simple_label) }
+non_empty_record_literal = { record_literal_entry ~ (whsp ~ ^"," ~ whsp ~ record_literal_entry)* ~ (whsp ~ ^",")? }
+any_label = _{ label }
+any_label_or_some = { any_label | Some_ }
+double_quote_chunk = { interpolation | "\u{5C}" ~ double_quote_escaped | double_quote_char }
+double_quote_escaped = { "\u{22}" | "$" | "\u{5C}" | "/" | "b" | "f" | "n" | "r" | "t" | "u" ~ unicode_escape }
+shebang = _{ ^"#!" ~ not_end_of_line* ~ end_of_line }
+record_literal_normal_entry = _{ (whsp ~ ^"." ~ whsp ~ any_label_or_some)* ~ whsp ~ ^"=" ~ whsp ~ expression }
+non_empty_list_literal = { ^"[" ~ whsp ~ (^"," ~ whsp)? ~ expression ~ whsp ~ (^"," ~ whsp ~ expression ~ whsp)* ~ (^"," ~ whsp)? ~ ^"]" }
+union_type = { (union_type_entry ~ (whsp ~ ^"|" ~ whsp ~ union_type_entry)* ~ (whsp ~ ^"|")?)? }
+union_type_entry = { any_label_or_some ~ (whsp ~ ^":" ~ whsp1 ~ expression)? }
+double_quote_char = { '\u{20}'..'!' | '#'..'[' | ']'..'\u{7F}' | valid_non_ascii }
+double_quote_literal = { "\u{22}" ~ double_quote_chunk* ~ "\u{22}" }
+single_quote_continue = { interpolation ~ single_quote_continue | escaped_quote_pair ~ single_quote_continue | escaped_interpolation ~ single_quote_continue | ^"''" | single_quote_char ~ single_quote_continue }
+escaped_quote_pair = { ^"'''" }
+escaped_interpolation = { ^"''${" }
+single_quote_char = { '\u{20}'..'\u{7F}' | valid_non_ascii | tab | end_of_line }
+single_quote_literal = { ^"''" ~ end_of_line ~ single_quote_continue }
+interpolation = _{ ^"${" ~ complete_expression ~ ^"}" }
+text_literal = _{ (double_quote_literal | single_quote_literal) }
+if_ = { "if" }
+then = _{ "then" }
+else_ = _{ "else" }
+let_ = _{ "let" }
+in_ = _{ "in" }
+as_ = _{ "as" }
+using = _{ "using" }
+merge = { "merge" }
+complete_expression = _{ shebang* ~ whsp ~ expression ~ whsp }
+Infinity = _{ "Infinity" }
+NaN = { "NaN" }
+Some_ = { "Some" }
+toMap = { "toMap" }
+assert = { "assert" }
+forall_keyword = { "forall" }
+forall_symbol = { "\u{2200}" }
+forall = { forall_symbol | forall_keyword }
+with = _{ "with" }
+keyword = _{ if_ | then | else_ | let_ | in_ | using | missing | assert | as_ | Infinity | NaN | merge | Some_ | toMap | forall_keyword | with }
+builtin = { Natural_fold | Natural_build | Natural_isZero | Natural_even | Natural_odd | Natural_toInteger | Natural_show | Integer_toDouble | Integer_show | Integer_negate | Integer_clamp | Natural_subtract | Double_show | List_build | List_fold | List_length | List_head | List_last | List_indexed | List_reverse | Text_show | Text_replace | Bool | True | False | Optional | None_ | Natural | Integer | Double | Text | List | Type | Kind | Sort }
+Optional = _{ "Optional" }
+Text = { "Text" }
+List = _{ "List" }
+Location = { "Location" }
+Bool = _{ "Bool" }
+True = _{ "True" }
+False = _{ "False" }
+None_ = _{ "None" }
+Natural = _{ "Natural" }
+Integer = _{ "Integer" }
+Double = _{ "Double" }
+Type = _{ "Type" }
+Kind = _{ "Kind" }
+Sort = _{ "Sort" }
+Natural_fold = _{ "Natural/fold" }
+Natural_build = _{ "Natural/build" }
+Natural_isZero = _{ "Natural/isZero" }
+Natural_even = _{ "Natural/even" }
+Natural_odd = _{ "Natural/odd" }
+Natural_toInteger = _{ "Natural/toInteger" }
+Natural_show = _{ "Natural/show" }
+Natural_subtract = _{ "Natural/subtract" }
+Integer_toDouble = _{ "Integer/toDouble" }
+Integer_show = _{ "Integer/show" }
+Integer_negate = { "Integer/negate" }
+Integer_clamp = { "Integer/clamp" }
+Double_show = _{ "Double/show" }
+List_build = _{ "List/build" }
+List_fold = _{ "List/fold" }
+List_length = _{ "List/length" }
+List_head = _{ "List/head" }
+List_last = _{ "List/last" }
+List_indexed = _{ "List/indexed" }
+List_reverse = _{ "List/reverse" }
+Text_show = _{ "Text/show" }
+Text_replace = { "Text/replace" }
+combine = { "\u{2227}" | ^"/\\" }
+combine_types = { "\u{2A53}" | ^"//\\\\" }
+equivalent = { "\u{2261}" | ^"===" }
+prefer = { "\u{2AFD}" | ^"//" }
+lambda = { "\u{3BB}" | ^"\\" }
+arrow = { "\u{2192}" | ^"->" }
+complete = _{ ^"::" }
+exponent = _{ ^"e" ~ (^"+" | ^"-")? ~ DIGIT+ }
+numeric_double_literal = { (^"+" | ^"-")? ~ DIGIT+ ~ (^"." ~ DIGIT+ ~ (exponent)? | exponent) }
+minus_infinity_literal = { ^"-" ~ Infinity }
+plus_infinity_literal = { Infinity }
+double_literal = _{ minus_infinity_literal | plus_infinity_literal | NaN | numeric_double_literal }
+natural_literal = { ^"0" ~ "x" ~ HEXDIG+ | (^"1" | ^"2" | ^"3" | ^"4" | ^"5" | ^"6" | ^"7" | ^"8" | ^"9") ~ DIGIT* | ^"0" }
+integer_literal = { (^"+" | ^"-") ~ natural_literal }
+identifier = { variable | builtin }
+variable = { nonreserved_label ~ (whsp ~ ^"@" ~ whsp ~ natural_literal)? }
+path_character = _{ "!" | '$'..'\u{27}' | '*'..'+' | '-'..'.' | '0'..';' | "=" | '@'..'Z' | '^'..'z' | "|" | "~" }
+quoted_path_character = _{ '\u{20}'..'!' | '#'..'.' | '0'..'\u{7F}' | valid_non_ascii }
+unquoted_path_component = { path_character+ }
+quoted_path_component = { quoted_path_character+ }
+path_component = _{ ^"/" ~ (unquoted_path_component | "\u{22}" ~ quoted_path_component ~ "\u{22}") }
+path = { path_component+ }
+local = { parent_path | here_path | home_path | absolute_path }
+parent_path = { ^".." ~ path }
+here_path = { ^"." ~ path }
+home_path = { ^"~" ~ path }
+absolute_path = { path }
+scheme = { "http" ~ ("s")? }
+http_raw = { scheme ~ ^"://" ~ authority ~ path_abempty ~ (^"?" ~ query)? }
+path_abempty = { (^"/" ~ segment)* }
+authority = { (userinfo ~ ^"@")? ~ host ~ (^":" ~ port)? }
+userinfo = _{ (unreserved | pct_encoded | sub_delims | ^":")* }
+host = _{ IP_literal | IPv4address | domain }
+port = _{ DIGIT* }
+IP_literal = _{ ^"[" ~ (IPv6address | IPvFuture) ~ ^"]" }
+IPvFuture = _{ ^"v" ~ HEXDIG+ ~ ^"." ~ (unreserved | sub_delims | ^":")+ }
+IPv6address = _{ (h16 ~ ^":"){6} ~ ls32 | ^"::" ~ (h16 ~ ^":"){5} ~ ls32 | (h16)? ~ ^"::" ~ (h16 ~ ^":"){4} ~ ls32 | (h16 ~ (^":" ~ h16)?)? ~ ^"::" ~ (h16 ~ ^":"){3} ~ ls32 | (h16 ~ (^":" ~ h16){0,2})? ~ ^"::" ~ (h16 ~ ^":"){2} ~ ls32 | (h16 ~ (^":" ~ h16){0,3})? ~ ^"::" ~ h16 ~ ^":" ~ ls32 | (h16 ~ (^":" ~ h16){0,4})? ~ ^"::" ~ ls32 | (h16 ~ (^":" ~ h16){0,5})? ~ ^"::" ~ h16 | (h16 ~ (^":" ~ h16){0,6})? ~ ^"::" }
+h16 = _{ HEXDIG{1,4} }
+ls32 = _{ h16 ~ ^":" ~ h16 | IPv4address }
+IPv4address = _{ dec_octet ~ ^"." ~ dec_octet ~ ^"." ~ dec_octet ~ ^"." ~ dec_octet }
+dec_octet = _{ ^"25" ~ '0'..'5' | ^"2" ~ '0'..'4' ~ DIGIT | ^"1" ~ DIGIT{2} | '1'..'9' ~ DIGIT | DIGIT }
+domain = _{ domainlabel ~ (^"." ~ domainlabel)* ~ (^".")? }
+domainlabel = _{ ALPHANUM+ ~ (^"-"+ ~ ALPHANUM+)* }
+segment = { pchar* }
+pchar = _{ unreserved | pct_encoded | sub_delims | ^":" | ^"@" }
+query = { (pchar | ^"/" | ^"?")* }
+pct_encoded = _{ ^"%" ~ HEXDIG ~ HEXDIG }
+unreserved = _{ ALPHANUM | ^"-" | ^"." | ^"_" | ^"~" }
+sub_delims = _{ ^"!" | ^"$" | ^"&" | ^"'" | ^"*" | ^"+" | ^";" | ^"=" }
+http = { http_raw ~ (whsp ~ using ~ whsp1 ~ import_expression)? }
+env = { ^"env:" ~ (bash_environment_variable | "\u{22}" ~ posix_environment_variable ~ "\u{22}") }
+bash_environment_variable = { (ALPHA | ^"_") ~ (ALPHANUM | ^"_")* }
+posix_environment_variable = { posix_environment_variable_character+ }
+posix_environment_variable_character = { "\u{5C}" ~ ("\u{22}" | "\u{5C}" | "a" | "b" | "f" | "n" | "r" | "t" | "v") | '\u{20}'..'!' | '#'..'<' | '>'..'[' | ']'..'~' }
+import_type = _{ missing | local | http | env }
+hash = { "sha256:" ~ HEXDIG{64} }
+import_hashed = { import_type ~ (whsp1 ~ hash)? }
+import = { import_hashed ~ (whsp ~ as_ ~ whsp1 ~ (Text | Location))? }
+expression = { lambda ~ whsp ~ ^"(" ~ whsp ~ nonreserved_label ~ whsp ~ ^":" ~ whsp1 ~ expression ~ whsp ~ ^")" ~ whsp ~ arrow ~ whsp ~ expression | if_ ~ whsp1 ~ expression ~ whsp ~ then ~ whsp1 ~ expression ~ whsp ~ else_ ~ whsp1 ~ expression | let_binding+ ~ in_ ~ whsp1 ~ expression | forall ~ whsp ~ ^"(" ~ whsp ~ nonreserved_label ~ whsp ~ ^":" ~ whsp1 ~ expression ~ whsp ~ ^")" ~ whsp ~ arrow ~ whsp ~ expression | operator_expression ~ whsp ~ arrow ~ whsp ~ expression | with_expression | merge ~ whsp1 ~ import_expression ~ whsp1 ~ import_expression ~ whsp ~ ^":" ~ whsp1 ~ application_expression | empty_list_literal | toMap ~ whsp1 ~ import_expression ~ whsp ~ ^":" ~ whsp1 ~ application_expression | assert ~ whsp ~ ^":" ~ whsp1 ~ expression | annotated_expression }
+annotated_expression = _{ operator_expression ~ (whsp ~ ^":" ~ whsp1 ~ expression)? }
+let_binding = { let_ ~ whsp1 ~ nonreserved_label ~ whsp ~ (^":" ~ whsp1 ~ expression ~ whsp)? ~ ^"=" ~ whsp ~ expression ~ whsp }
+empty_list_literal = { ^"[" ~ whsp ~ (^"," ~ whsp)? ~ ^"]" ~ whsp ~ ^":" ~ whsp1 ~ application_expression }
+with_expression = { import_expression ~ (whsp1 ~ with ~ whsp1 ~ with_clause)+ }
+with_clause = { any_label_or_some ~ (whsp ~ ^"." ~ whsp ~ any_label_or_some)* ~ whsp ~ ^"=" ~ whsp ~ operator_expression }
+record_type_entry = { any_label_or_some ~ whsp ~ ^":" ~ whsp1 ~ expression }
+equivalent_expression = { import_alt_expression ~ (whsp ~ equivalent ~ whsp ~ import_alt_expression)* }
+import_alt_expression = { or_expression ~ (whsp ~ ^"?" ~ whsp1 ~ or_expression)* }
+or_expression = { plus_expression ~ (whsp ~ ^"||" ~ whsp ~ plus_expression)* }
+plus_expression = { text_append_expression ~ (whsp ~ ^"+" ~ whsp1 ~ text_append_expression)* }
+text_append_expression = { list_append_expression ~ (whsp ~ ^"++" ~ whsp ~ list_append_expression)* }
+list_append_expression = { and_expression ~ (whsp ~ ^"#" ~ whsp ~ and_expression)* }
+and_expression = { combine_expression ~ (whsp ~ ^"&&" ~ whsp ~ combine_expression)* }
+combine_expression = { prefer_expression ~ (whsp ~ combine ~ whsp ~ prefer_expression)* }
+prefer_expression = { combine_types_expression ~ (whsp ~ prefer ~ whsp ~ combine_types_expression)* }
+combine_types_expression = { times_expression ~ (whsp ~ combine_types ~ whsp ~ times_expression)* }
+times_expression = { equal_expression ~ (whsp ~ ^"*" ~ whsp ~ equal_expression)* }
+equal_expression = { not_equal_expression ~ (whsp ~ ^"==" ~ whsp ~ not_equal_expression)* }
+not_equal_expression = { application_expression ~ (whsp ~ ^"!=" ~ whsp ~ application_expression)* }
+application_expression = { first_application_expression ~ (whsp1 ~ import_expression)* }
+first_application_expression = { merge ~ whsp1 ~ import_expression ~ whsp1 ~ import_expression | Some_ ~ whsp1 ~ import_expression | toMap ~ whsp1 ~ import_expression | import_expression }
+import_expression = _{ import | completion_expression }
+completion_expression = { selector_expression ~ (whsp ~ complete ~ whsp ~ selector_expression)? }
+selector_expression = { primitive_expression ~ (whsp ~ ^"." ~ whsp ~ selector)* }
+selector = { any_label | labels | type_selector }
+labels = { ^"{" ~ whsp ~ (^"," ~ whsp)? ~ (any_label_or_some ~ whsp ~ (^"," ~ whsp ~ any_label_or_some ~ whsp)* ~ (^"," ~ whsp)?)? ~ ^"}" }
+type_selector = _{ ^"(" ~ whsp ~ expression ~ whsp ~ ^")" }
+primitive_expression = { double_literal | natural_literal | integer_literal | text_literal | ^"{" ~ whsp ~ (^"," ~ whsp)? ~ record_type_or_literal ~ whsp ~ ^"}" | ^"<" ~ whsp ~ (^"|" ~ whsp)? ~ union_type ~ whsp ~ ^">" | non_empty_list_literal | identifier | ^"(" ~ complete_expression ~ ^")" }
+record_type_or_literal = { empty_record_literal | (non_empty_record_type_or_literal)? }
+empty_record_literal = { ^"=" ~ (whsp ~ ^",")? }
+non_empty_record_type_or_literal = _{ (non_empty_record_type | non_empty_record_literal) }
+non_empty_record_type = { record_type_entry ~ (whsp ~ ^"," ~ whsp ~ record_type_entry)* ~ (whsp ~ ^",")? }

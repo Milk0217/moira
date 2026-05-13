@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["GenericDAF"],"trait":["MutKind"],"type":["DAF","MutDAF"]};

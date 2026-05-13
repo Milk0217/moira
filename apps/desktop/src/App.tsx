@@ -4,6 +4,7 @@ import { ChartData, BirthInfo } from "./types/chart";
 import InputForm from "./components/InputForm";
 import AstrologyChart from "./components/AstrologyChart";
 import PlanetTable from "./components/PlanetTable";
+import BaziPanel from "./components/BaziPanel";
 import ErrorBoundary from "./components/ErrorBoundary";
 
 function App() {
@@ -130,12 +131,45 @@ function App() {
                 导出 PNG
               </button>
             </div>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <span style={{ color: "#888", fontSize: 13 }}>星制:</span>
+              <button
+                onClick={() => {}}
+                style={{
+                  padding: "4px 12px",
+                  fontSize: 12,
+                  borderRadius: 4,
+                  border: `1px solid ${chartData.zodiac_type === "回归" ? "#c9a0dc" : "#555"}`,
+                  background: chartData.zodiac_type === "回归" ? "#3a1a5e" : "transparent",
+                  color: chartData.zodiac_type === "回归" ? "#c9a0dc" : "#888",
+                  cursor: "pointer",
+                }}
+              >
+                回归制 {chartData.zodiac_type === "回归" ? "✓" : ""}
+              </button>
+              <span style={{ color: "#555", fontSize: 11 }}>
+                岁差: {chartData.ayanamsa.toFixed(2)}°
+              </span>
+            </div>
             <PlanetTable
               bodies={chartData.bodies}
               extras={chartData.extra_bodies}
               aspects={chartData.aspects}
               houses={chartData.houses}
               shen_sha={chartData.shen_sha}
+            />
+            <BaziPanel
+              bazi={chartData.bazi}
+              ascendant={chartData.ascendant}
+              midheaven={chartData.midheaven}
+              partOfFortune={chartData.part_of_fortune}
+              mingZhu={chartData.ming_zhu}
+              shenZhu={chartData.shen_zhu}
+              shiganhuayao={chartData.shiganhuayao}
+              xijige={chartData.xijige}
+              xiaoxianResult={chartData.xiaoxian_result}
+              yuexianResult={chartData.yuexian_result}
+              dongweifeixianResult={chartData.dongweifeixian_result}
             />
           </div>
         ) : (

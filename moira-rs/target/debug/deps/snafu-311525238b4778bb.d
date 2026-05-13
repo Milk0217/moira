@@ -1,0 +1,12 @@
+/home/milky/Documents/moira/moira-rs/target/debug/deps/snafu-311525238b4778bb.d: /home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/snafu-0.8.9/src/lib.rs /home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/snafu-0.8.9/src/backtrace_impl_std.rs /home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/snafu-0.8.9/src/once_bool.rs /home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/snafu-0.8.9/src/error_chain.rs /home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/snafu-0.8.9/src/report.rs /home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/snafu-0.8.9/src/boxed_impls.rs /home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/snafu-0.8.9/src/Snafu.md /home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/snafu-0.8.9/src/report.md
+
+/home/milky/Documents/moira/moira-rs/target/debug/deps/libsnafu-311525238b4778bb.rmeta: /home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/snafu-0.8.9/src/lib.rs /home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/snafu-0.8.9/src/backtrace_impl_std.rs /home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/snafu-0.8.9/src/once_bool.rs /home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/snafu-0.8.9/src/error_chain.rs /home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/snafu-0.8.9/src/report.rs /home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/snafu-0.8.9/src/boxed_impls.rs /home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/snafu-0.8.9/src/Snafu.md /home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/snafu-0.8.9/src/report.md
+
+/home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/snafu-0.8.9/src/lib.rs:
+/home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/snafu-0.8.9/src/backtrace_impl_std.rs:
+/home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/snafu-0.8.9/src/once_bool.rs:
+/home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/snafu-0.8.9/src/error_chain.rs:
+/home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/snafu-0.8.9/src/report.rs:
+/home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/snafu-0.8.9/src/boxed_impls.rs:
+/home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/snafu-0.8.9/src/Snafu.md:
+/home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/snafu-0.8.9/src/report.md:

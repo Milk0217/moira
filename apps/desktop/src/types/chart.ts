@@ -29,6 +29,49 @@ export interface ShenSha {
   quality: string;
 }
 
+export interface Pillar {
+  heavenly_stem: string;
+  earthly_branch: string;
+  stem_index: number;
+  branch_index: number;
+}
+
+export interface DayunPillar {
+  age: number;
+  heavenly_stem: string;
+  earthly_branch: string;
+  stem_index: number;
+  branch_index: number;
+}
+
+export interface ShishenItem {
+  pillar_name: string;
+  stem: string;
+  shishen: string;
+}
+
+export interface HiddenStemInfo {
+  branch_name: string;
+  stems: string[];
+}
+
+export interface LifeCycleItem {
+  branch_name: string;
+  stage: string;
+}
+
+export interface BaziData {
+  year_pillar: Pillar;
+  month_pillar: Pillar;
+  day_pillar: Pillar;
+  hour_pillar: Pillar;
+  dayun: DayunPillar[];
+  shishen: ShishenItem[];
+  hidden_stems: HiddenStemInfo[];
+  life_cycle: LifeCycleItem[];
+  taiyuan: Pillar;
+}
+
 export interface ChartData {
   timestamp: string;
   bodies: CelestialBody[];
@@ -36,6 +79,19 @@ export interface ChartData {
   aspects: Aspect[];
   houses: HouseData[];
   shen_sha: ShenSha[];
+  ascendant: number;
+  midheaven: number;
+  part_of_fortune: number;
+  bazi: BaziData;
+  shiganhuayao: [string, string][];
+  ming_zhu: string;
+  shen_zhu: string;
+  xijige: [string, string][];
+  xiaoxian_result: [string, number];
+  yuexian_result: [string, number];
+  dongweifeixian_result: [number, string, string][];
+  zodiac_type: string;
+  ayanamsa: number;
 }
 
 export interface BirthInfo {

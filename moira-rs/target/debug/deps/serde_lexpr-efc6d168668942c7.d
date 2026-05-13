@@ -1,0 +1,11 @@
+/home/milky/Documents/moira/moira-rs/target/debug/deps/serde_lexpr-efc6d168668942c7.d: /home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-lexpr-0.1.3/src/lib.rs /home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-lexpr-0.1.3/src/de.rs /home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-lexpr-0.1.3/src/ser.rs /home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-lexpr-0.1.3/src/value/mod.rs /home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-lexpr-0.1.3/src/value/de.rs /home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-lexpr-0.1.3/src/value/ser.rs /home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-lexpr-0.1.3/src/error.rs
+
+/home/milky/Documents/moira/moira-rs/target/debug/deps/libserde_lexpr-efc6d168668942c7.rmeta: /home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-lexpr-0.1.3/src/lib.rs /home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-lexpr-0.1.3/src/de.rs /home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-lexpr-0.1.3/src/ser.rs /home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-lexpr-0.1.3/src/value/mod.rs /home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-lexpr-0.1.3/src/value/de.rs /home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-lexpr-0.1.3/src/value/ser.rs /home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-lexpr-0.1.3/src/error.rs
+
+/home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-lexpr-0.1.3/src/lib.rs:
+/home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-lexpr-0.1.3/src/de.rs:
+/home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-lexpr-0.1.3/src/ser.rs:
+/home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-lexpr-0.1.3/src/value/mod.rs:
+/home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-lexpr-0.1.3/src/value/de.rs:
+/home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-lexpr-0.1.3/src/value/ser.rs:
+/home/milky/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-lexpr-0.1.3/src/error.rs:

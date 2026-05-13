@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["KEY_NAME_LEN"],"enum":["LutError"],"struct":["LookUpTable"]};

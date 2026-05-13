@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["perp_vector","project_vector","root_mean_squared","root_sum_squared","rotate_vector"],"mod":["angles","cartesian","interpolation","rotation","units"],"type":["Matrix3","Matrix6","Vector3","Vector4","Vector6"]};

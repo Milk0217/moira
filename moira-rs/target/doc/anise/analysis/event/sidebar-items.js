@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["EventEdge"],"struct":["Event","EventArc","EventDetails"]};

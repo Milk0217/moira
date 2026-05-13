@@ -4,12 +4,14 @@ import { Stage, Layer, Arc, Circle, Line, Rect, Text, Group } from "react-konva"
 const BODY_SYMBOLS: Record<string, string> = {
   太阳: "☉", 太阴: "☽", 水星: "☿", 金星: "♀",
   火星: "♂", 木星: "♃", 土星: "♄",
+  天王星: "♅", 海王星: "♆", 冥王星: "♇",
   罗睺: "☊", 计都: "☋", 月孛: "⚸", 紫炁: "✦",
 };
 
 const BODY_COLORS: Record<string, string> = {
   太阳: "#FFD700", 太阴: "#C0C0C0", 水星: "#B5A5D5", 金星: "#FF69B4",
   火星: "#FF4444", 木星: "#DAA520", 土星: "#CD853F",
+  天王星: "#7ECBA1", 海王星: "#4B70DD", 冥王星: "#8B7355",
   罗睺: "#9370DB", 计都: "#8B0000", 月孛: "#2F4F4F", 紫炁: "#FFE4B5",
 };
 

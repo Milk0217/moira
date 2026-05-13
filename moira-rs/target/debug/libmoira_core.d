@@ -1,0 +1,1 @@
+/home/milky/Documents/moira/moira-rs/target/debug/libmoira_core.rlib: /home/milky/Documents/moira/moira-rs/crates/moira-core/src/angles.rs /home/milky/Documents/moira/moira-rs/crates/moira-core/src/bazi.rs /home/milky/Documents/moira/moira-rs/crates/moira-core/src/lib.rs

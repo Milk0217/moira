@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["DAFError","DafDataType"],"mod":["daf","datatypes","file_record","mut_daf","name_record","summary_record"],"trait":["NAIFDataRecord","NAIFDataSet","NAIFRecord","NAIFSummaryRecord"]};

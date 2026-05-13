@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["LagrangeSetType8","LagrangeSetType9"]};

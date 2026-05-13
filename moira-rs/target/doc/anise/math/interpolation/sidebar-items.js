@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["InterpolationError"],"fn":["chebyshev_eval","chebyshev_eval_poly","hermite_eval","lagrange_eval"]};

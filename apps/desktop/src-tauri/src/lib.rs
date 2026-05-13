@@ -36,7 +36,7 @@ fn calculate(
     use hifitime::Duration;
     let utc_epoch = epoch - Duration::from_seconds(tz_hours as f64);
 
-    let data = calculate_chart(&state.almanac, utc_epoch, latitude, longitude);
+    let data = calculate_chart(&state.almanac, utc_epoch, latitude, longitude, timezone);
     Ok(data)
 }
 
