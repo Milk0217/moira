@@ -1,5 +1,7 @@
 import { useState, FormEvent } from "react";
 import { BirthInfo } from "../types/chart";
+import { Field, inputStyle } from "./shared";
+import { theme } from "../theme";
 
 interface Props {
   onCalculate: (info: BirthInfo) => void;
@@ -34,7 +36,7 @@ export default function InputForm({ onCalculate, loading }: Props) {
         />
       </Field>
 
-      <div style={{ display: "flex", gap: 8 }}>
+      <div style={{ display: "flex", gap: theme.spacing.sm }}>
         <Field label="月">
           <input
             type="number"
@@ -57,7 +59,7 @@ export default function InputForm({ onCalculate, loading }: Props) {
         </Field>
       </div>
 
-      <div style={{ display: "flex", gap: 8 }}>
+      <div style={{ display: "flex", gap: theme.spacing.sm }}>
         <Field label="时">
           <input
             type="number"
@@ -90,7 +92,7 @@ export default function InputForm({ onCalculate, loading }: Props) {
         </Field>
       </div>
 
-      <div style={{ display: "flex", gap: 8 }}>
+      <div style={{ display: "flex", gap: theme.spacing.sm }}>
         <Field label="纬度 (北+ / 南-)">
           <input
             type="number"
@@ -127,18 +129,18 @@ export default function InputForm({ onCalculate, loading }: Props) {
         />
       </Field>
 
-      <div style={{ marginBottom: 12 }}>
+      <div style={{ marginBottom: theme.spacing.md }}>
         <button
           type="button"
           onClick={() => setDst(!dst)}
           style={{
             width: "100%",
             padding: "8px 10px",
-            background: dst ? "#3a1a5e" : "#1a1a2e",
-            color: dst ? "#c9a0dc" : "#888",
-            border: `1px solid ${dst ? "#c9a0dc" : "#333"}`,
-            borderRadius: 6,
-            fontSize: 14,
+            background: dst ? theme.colors.accent.dark : theme.colors.bg.input,
+            color: dst ? theme.colors.accent.primary : theme.colors.text.secondary,
+            border: `1px solid ${dst ? theme.colors.accent.primary : theme.colors.border.default}`,
+            borderRadius: theme.radius.md,
+            fontSize: theme.fontSize.lg,
             cursor: "pointer",
             textAlign: "center",
           }}
@@ -152,12 +154,12 @@ export default function InputForm({ onCalculate, loading }: Props) {
         disabled={loading}
         style={{
           width: "100%",
-          marginTop: 16,
+          marginTop: theme.spacing.lg,
           padding: "10px 0",
-          background: loading ? "#555" : "#6a1b9a",
-          color: "#fff",
+          background: loading ? theme.colors.bg.disabled : theme.colors.accent.muted,
+          color: theme.colors.text.inverse,
           border: "none",
-          borderRadius: 8,
+          borderRadius: theme.radius.lg,
           fontSize: 15,
           fontWeight: "bold",
           cursor: loading ? "not-allowed" : "pointer",
@@ -169,39 +171,3 @@ export default function InputForm({ onCalculate, loading }: Props) {
     </form>
   );
 }
-
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div style={{ marginBottom: 12 }}>
-      <label
-        style={{
-          display: "block",
-          fontSize: 12,
-          color: "#888",
-          marginBottom: 4,
-        }}
-      >
-        {label}
-      </label>
-      {children}
-    </div>
-  );
-}
-
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "8px 10px",
-  background: "#1a1a2e",
-  color: "#e0e0e0",
-  border: "1px solid #333",
-  borderRadius: 6,
-  fontSize: 14,
-  outline: "none",
-  boxSizing: "border-box",
-};

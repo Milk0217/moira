@@ -78,6 +78,7 @@ interface Props {
   houses?: HouseEntry[];
   size?: number;
   centerText?: string;
+  stageRef?: React.RefObject<any>;
 }
 
 function degToVec(deg: number, radius: number, cx: number, cy: number) {
@@ -134,6 +135,7 @@ export default function AstrologyChart({
   houses,
   size = 500,
   centerText = "命盘",
+  stageRef,
 }: Props) {
   const cx = size / 2;
   const cy = size / 2;
@@ -227,7 +229,7 @@ export default function AstrologyChart({
           ))}
         </div>
       )}
-    <Stage width={size} height={size}>
+    <Stage ref={stageRef} width={size} height={size}>
       <Layer>
         {/* Background - click to deselect */}
         <Circle

@@ -108,6 +108,11 @@ export interface BirthInfo {
   dst_applied: boolean;
 }
 
+export interface ElectionalInfo extends BirthInfo {
+  event_name?: string;
+  event_type?: string;
+}
+
 export interface HouseData {
   index: number;
   longitude: number;

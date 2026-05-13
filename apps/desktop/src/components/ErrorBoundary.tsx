@@ -1,4 +1,5 @@
 import { Component, ReactNode } from "react";
+import { theme } from "../theme";
 
 interface Props {
   children: ReactNode;
@@ -23,13 +24,13 @@ export default class ErrorBoundary extends Component<Props, State> {
         this.props.fallback || (
           <div
             style={{
-              padding: 24,
-              color: "#e63946",
+              padding: theme.spacing.xl,
+              color: theme.colors.semantic.error,
               textAlign: "center",
             }}
           >
             <p>渲染异常</p>
-            <p style={{ fontSize: 12, color: "#888" }}>
+            <p style={{ fontSize: theme.fontSize.sm, color: theme.colors.text.secondary }}>
               {this.state.error?.message}
             </p>
           </div>

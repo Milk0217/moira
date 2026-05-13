@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, memo } from "react";
 import type { BaziData } from "../types/chart";
+import { theme } from "../theme";
+import { TH, TD } from "./shared";
 
 interface Props {
   bazi: BaziData;
@@ -15,31 +17,45 @@ interface Props {
   dongweifeixianResult: [number, string, string][];
 }
 
-export default function BaziPanel({ bazi, ascendant, midheaven, partOfFortune, mingZhu, shenZhu, shiganhuayao, xijige, xiaoxianResult, yuexianResult, dongweifeixianResult }: Props) {
+function BaziPanel({ bazi, ascendant, midheaven, partOfFortune, mingZhu, shenZhu, shiganhuayao, xijige, xiaoxianResult, yuexianResult, dongweifeixianResult }: Props) {
   const [tab, setTab] = useState<"bazi" | "dayun" | "shishen" | "life" | "wuxing" | "liuxian">("bazi");
 
   const section = (title: string, content: string) => (
     <tr>
-      <td style={{ color: "#888", padding: "4px 8px", whiteSpace: "nowrap", fontSize: 13 }}>{title}</td>
-      <td style={{ color: "#e0e0e0", padding: "4px 8px", fontSize: 13 }}>{content}</td>
+      <td style={{ color: theme.colors.text.secondary, padding: "4px 8px", whiteSpace: "nowrap", fontSize: theme.fontSize.md }}>{title}</td>
+      <td style={{ color: theme.colors.text.primary, padding: "4px 8px", fontSize: theme.fontSize.md }}>{content}</td>
     </tr>
   );
 
   const pillarStr = (p: { heavenly_stem: string; earthly_branch: string }) =>
     `${p.heavenly_stem}${p.earthly_branch}`;
 
+  const tabBtnStyle = (isActive: boolean): React.CSSProperties => ({
+    padding: "4px 12px",
+    fontSize: theme.fontSize.sm,
+    borderRadius: theme.radius.sm,
+    border: `1px solid ${isActive ? theme.colors.accent.primary : theme.colors.border.default}`,
+    background: isActive ? theme.colors.accent.dark : "transparent",
+    color: isActive ? theme.colors.accent.primary : theme.colors.text.secondary,
+    cursor: "pointer",
+  });
+
+  const tdPillar = (color: string) => ({
+    padding: "2px 10px",
+    color,
+  });
+
   return (
     <div
       style={{
         width: "100%",
         maxWidth: 500,
-        marginTop: 16,
-        borderTop: "1px solid #2a2a4a",
-        paddingTop: 12,
+        marginTop: theme.spacing.lg,
+        borderTop: `1px solid ${theme.colors.border.light}`,
+        paddingTop: theme.spacing.md,
       }}
     >
-      {/* Tab bar */}
-      <div style={{ display: "flex", gap: 4, marginBottom: 8 }}>
+      <div style={{ display: "flex", gap: theme.spacing.xs, marginBottom: theme.spacing.sm }}>
         {[
           { key: "bazi" as const, label: "四柱八字" },
           { key: "dayun" as const, label: "大运" },
@@ -51,47 +67,38 @@ export default function BaziPanel({ bazi, ascendant, midheaven, partOfFortune, m
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            style={{
-              padding: "4px 12px",
-              fontSize: 12,
-              borderRadius: 4,
-              border: `1px solid ${tab === t.key ? "#c9a0dc" : "#333"}`,
-              background: tab === t.key ? "#3a1a5e" : "transparent",
-              color: tab === t.key ? "#c9a0dc" : "#888",
-              cursor: "pointer",
-            }}
+            style={tabBtnStyle(tab === t.key)}
           >
             {t.label}
           </button>
         ))}
       </div>
 
-      {/* Bazi tab */}
       {tab === "bazi" && (
         <div>
-          <h4 style={{ color: "#c9a0dc", fontSize: 14, marginBottom: 8 }}>八字</h4>
-          <table style={{ borderCollapse: "collapse", fontSize: 16, marginBottom: 12 }}>
+          <h4 style={{ color: theme.colors.accent.primary, fontSize: theme.fontSize.lg, marginBottom: theme.spacing.sm }}>八字</h4>
+          <table style={{ borderCollapse: "collapse", fontSize: theme.fontSize.xl, marginBottom: theme.spacing.md }}>
             <tbody>
               <tr>
-                <td style={{ padding: "2px 10px", color: "#888" }}>年</td>
-                <td style={{ padding: "2px 10px", color: "#FFD700" }}>{pillarStr(bazi.year_pillar)}</td>
+                <td style={{ padding: "2px 10px", color: theme.colors.text.secondary }}>年</td>
+                <td style={tdPillar(theme.colors.semantic.pillar.year)}>{pillarStr(bazi.year_pillar)}</td>
               </tr>
               <tr>
-                <td style={{ padding: "2px 10px", color: "#888" }}>月</td>
-                <td style={{ padding: "2px 10px", color: "#69F0AE" }}>{pillarStr(bazi.month_pillar)}</td>
+                <td style={{ padding: "2px 10px", color: theme.colors.text.secondary }}>月</td>
+                <td style={tdPillar(theme.colors.semantic.pillar.month)}>{pillarStr(bazi.month_pillar)}</td>
               </tr>
               <tr>
-                <td style={{ padding: "2px 10px", color: "#888" }}>日</td>
-                <td style={{ padding: "2px 10px", color: "#FF5252" }}>{pillarStr(bazi.day_pillar)}</td>
+                <td style={{ padding: "2px 10px", color: theme.colors.text.secondary }}>日</td>
+                <td style={tdPillar(theme.colors.semantic.pillar.day)}>{pillarStr(bazi.day_pillar)}</td>
               </tr>
               <tr>
-                <td style={{ padding: "2px 10px", color: "#888" }}>时</td>
-                <td style={{ padding: "2px 10px", color: "#40C4FF" }}>{pillarStr(bazi.hour_pillar)}</td>
+                <td style={{ padding: "2px 10px", color: theme.colors.text.secondary }}>时</td>
+                <td style={tdPillar(theme.colors.semantic.pillar.hour)}>{pillarStr(bazi.hour_pillar)}</td>
               </tr>
             </tbody>
           </table>
 
-          <h4 style={{ color: "#c9a0dc", fontSize: 14, marginBottom: 8 }}>关键点</h4>
+          <h4 style={{ color: theme.colors.accent.primary, fontSize: theme.fontSize.lg, marginBottom: theme.spacing.sm }}>关键点</h4>
           <table style={{ borderCollapse: "collapse", width: "100%" }}>
             <tbody>
               {section("上升 (Asc)", `${ascendant.toFixed(2)}°`)}
@@ -105,24 +112,21 @@ export default function BaziPanel({ bazi, ascendant, midheaven, partOfFortune, m
         </div>
       )}
 
-      {/* Dayun tab */}
       {tab === "dayun" && (
         <div>
-          <h4 style={{ color: "#c9a0dc", fontSize: 14, marginBottom: 8 }}>大运（每十年一运）</h4>
-          <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 13 }}>
+          <h4 style={{ color: theme.colors.accent.primary, fontSize: theme.fontSize.lg, marginBottom: theme.spacing.sm }}>大运（每十年一运）</h4>
+          <table style={{ borderCollapse: "collapse", width: "100%", fontSize: theme.fontSize.md }}>
             <thead>
-              <tr style={{ borderBottom: "1px solid #333" }}>
-                <th style={{ padding: "4px 8px", textAlign: "left", color: "#888" }}>年龄</th>
-                <th style={{ padding: "4px 8px", textAlign: "left", color: "#888" }}>大运</th>
+              <tr style={{ borderBottom: `1px solid ${theme.colors.border.default}` }}>
+                <TH>年龄</TH>
+                <TH>大运</TH>
               </tr>
             </thead>
             <tbody>
               {bazi.dayun.map((d, i) => (
-                <tr key={i} style={{ borderBottom: "1px solid #1a1a2e" }}>
-                  <td style={{ padding: "4px 8px", color: "#888" }}>{d.age}-{d.age + 9}</td>
-                  <td style={{ padding: "4px 8px", color: "#e0e0e0" }}>
-                    {d.heavenly_stem}{d.earthly_branch}
-                  </td>
+                <tr key={i} style={{ borderBottom: `1px solid ${theme.colors.bg.primary}` }}>
+                  <TD>{d.age}-{d.age + 9}</TD>
+                  <TD>{d.heavenly_stem}{d.earthly_branch}</TD>
                 </tr>
               ))}
             </tbody>
@@ -130,66 +134,64 @@ export default function BaziPanel({ bazi, ascendant, midheaven, partOfFortune, m
         </div>
       )}
 
-      {/* Shishen tab */}
       {tab === "shishen" && (
         <div>
-          <h4 style={{ color: "#c9a0dc", fontSize: 14, marginBottom: 8 }}>十神</h4>
-          <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 13 }}>
+          <h4 style={{ color: theme.colors.accent.primary, fontSize: theme.fontSize.lg, marginBottom: theme.spacing.sm }}>十神</h4>
+          <table style={{ borderCollapse: "collapse", width: "100%", fontSize: theme.fontSize.md }}>
             <thead>
-              <tr style={{ borderBottom: "1px solid #333" }}>
-                <th style={{ padding: "4px 8px", textAlign: "left", color: "#888" }}>柱</th>
-                <th style={{ padding: "4px 8px", textAlign: "left", color: "#888" }}>天干</th>
-                <th style={{ padding: "4px 8px", textAlign: "left", color: "#888" }}>十神</th>
+              <tr style={{ borderBottom: `1px solid ${theme.colors.border.default}` }}>
+                <TH>柱</TH>
+                <TH>天干</TH>
+                <TH>十神</TH>
               </tr>
             </thead>
             <tbody>
               {bazi.shishen.map((s, i) => (
-                <tr key={i} style={{ borderBottom: "1px solid #1a1a2e" }}>
-                  <td style={{ padding: "4px 8px", color: "#e0e0e0" }}>{s.pillar_name}</td>
-                  <td style={{ padding: "4px 8px", color: "#e0e0e0" }}>{s.stem}</td>
-                  <td style={{ padding: "4px 8px", color: "#c9a0dc" }}>{s.shishen}</td>
+                <tr key={i} style={{ borderBottom: `1px solid ${theme.colors.bg.primary}` }}>
+                  <TD>{s.pillar_name}</TD>
+                  <TD>{s.stem}</TD>
+                  <td style={{ padding: "4px 8px", color: theme.colors.accent.primary, fontSize: theme.fontSize.md }}>{s.shishen}</td>
                 </tr>
               ))}
             </tbody>
           </table>
 
-          <h4 style={{ color: "#c9a0dc", fontSize: 14, margin: "12px 0 8px" }}>藏干</h4>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, fontSize: 13 }}>
+          <h4 style={{ color: theme.colors.accent.primary, fontSize: theme.fontSize.lg, margin: "12px 0 8px" }}>藏干</h4>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: theme.spacing.sm, fontSize: theme.fontSize.md }}>
             {bazi.hidden_stems.map((h, i) => (
-              <div key={i} style={{ padding: "4px 8px", background: "#1a1a2e", borderRadius: 4 }}>
-                <span style={{ color: "#888" }}>{h.branch_name}: </span>
-                <span style={{ color: "#e0e0e0" }}>{h.stems.join(" ")}</span>
+              <div key={i} style={{ padding: "4px 8px", background: theme.colors.bg.primary, borderRadius: theme.radius.sm }}>
+                <span style={{ color: theme.colors.text.secondary }}>{h.branch_name}: </span>
+                <span style={{ color: theme.colors.text.primary }}>{h.stems.join(" ")}</span>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Life cycle tab */}
       {tab === "life" && (
         <div>
-          <h4 style={{ color: "#c9a0dc", fontSize: 14, marginBottom: 8 }}>长生十二宫（日干 {bazi.day_pillar.heavenly_stem}）</h4>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 4, fontSize: 13 }}>
+          <h4 style={{ color: theme.colors.accent.primary, fontSize: theme.fontSize.lg, marginBottom: theme.spacing.sm }}>长生十二宫（日干 {bazi.day_pillar.heavenly_stem}）</h4>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: theme.spacing.xs, fontSize: theme.fontSize.md }}>
             {bazi.life_cycle.map((l, i) => (
               <div
                 key={i}
                 style={{
                   padding: "4px 8px",
-                  background: l.stage === "长生" || l.stage === "帝旺" || l.stage === "临官" ? "#1a3a1a" : "#2a1a1a",
-                  borderRadius: 4,
+                  background: l.stage === "长生" || l.stage === "帝旺" || l.stage === "临官" ? theme.colors.semantic.lifeCycle.goodBg : theme.colors.semantic.lifeCycle.badBg,
+                  borderRadius: theme.radius.sm,
                   display: "flex",
                   justifyContent: "space-between",
                 }}
               >
-                <span style={{ color: "#888" }}>{l.branch_name}</span>
+                <span style={{ color: theme.colors.text.secondary }}>{l.branch_name}</span>
                 <span
                   style={{
                     color:
                       l.stage === "长生" || l.stage === "帝旺" || l.stage === "临官"
-                        ? "#69F0AE"
+                        ? theme.colors.semantic.lifeCycle.goodText
                         : l.stage === "死" || l.stage === "墓" || l.stage === "绝"
-                          ? "#FF5252"
-                          : "#e0e0e0",
+                          ? theme.colors.semantic.lifeCycle.badText
+                          : theme.colors.text.primary,
                   }}
                 >
                   {l.stage}
@@ -200,32 +202,31 @@ export default function BaziPanel({ bazi, ascendant, midheaven, partOfFortune, m
         </div>
       )}
 
-      {/* Liuxian tab */}
       {tab === "liuxian" && (
         <div>
-          <h4 style={{ color: "#c9a0dc", fontSize: 14, marginBottom: 8 }}>小限</h4>
-          <p style={{ fontSize: 13, color: "#e0e0e0", marginBottom: 12 }}>
+          <h4 style={{ color: theme.colors.accent.primary, fontSize: theme.fontSize.lg, marginBottom: theme.spacing.sm }}>小限</h4>
+          <p style={{ fontSize: theme.fontSize.md, color: theme.colors.text.primary, marginBottom: theme.spacing.md }}>
             本年小限: {xiaoxianResult[0]} ({xiaoxianResult[1]}岁)
           </p>
-          <h4 style={{ color: "#c9a0dc", fontSize: 14, marginBottom: 8 }}>月限</h4>
-          <p style={{ fontSize: 13, color: "#e0e0e0", marginBottom: 12 }}>
+          <h4 style={{ color: theme.colors.accent.primary, fontSize: theme.fontSize.lg, marginBottom: theme.spacing.sm }}>月限</h4>
+          <p style={{ fontSize: theme.fontSize.md, color: theme.colors.text.primary, marginBottom: theme.spacing.md }}>
             本月月限: {yuexianResult[0]}
           </p>
-          <h4 style={{ color: "#c9a0dc", fontSize: 14, marginBottom: 8 }}>洞微飞限</h4>
-          <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 13 }}>
+          <h4 style={{ color: theme.colors.accent.primary, fontSize: theme.fontSize.lg, marginBottom: theme.spacing.sm }}>洞微飞限</h4>
+          <table style={{ borderCollapse: "collapse", width: "100%", fontSize: theme.fontSize.md }}>
             <thead>
-              <tr style={{ borderBottom: "1px solid #333" }}>
-                <th style={{ padding: "4px 8px", textAlign: "left", color: "#888" }}>起始年龄</th>
-                <th style={{ padding: "4px 8px", textAlign: "left", color: "#888" }}>限</th>
-                <th style={{ padding: "4px 8px", textAlign: "left", color: "#888" }}>地支</th>
+              <tr style={{ borderBottom: `1px solid ${theme.colors.border.default}` }}>
+                <TH>起始年龄</TH>
+                <TH>限</TH>
+                <TH>地支</TH>
               </tr>
             </thead>
             <tbody>
               {dongweifeixianResult.map((p, i) => (
-                <tr key={i} style={{ borderBottom: "1px solid #1a1a2e" }}>
-                  <td style={{ padding: "4px 8px", color: "#888" }}>{p[0]}岁</td>
-                  <td style={{ padding: "4px 8px", color: "#e0e0e0" }}>{p[1]}</td>
-                  <td style={{ padding: "4px 8px", color: "#c9a0dc" }}>{p[2]}</td>
+                <tr key={i} style={{ borderBottom: `1px solid ${theme.colors.bg.primary}` }}>
+                  <TD>{p[0]}岁</TD>
+                  <TD>{p[1]}</TD>
+                  <td style={{ padding: "4px 8px", color: theme.colors.accent.primary, fontSize: theme.fontSize.md }}>{p[2]}</td>
                 </tr>
               ))}
             </tbody>
@@ -233,40 +234,39 @@ export default function BaziPanel({ bazi, ascendant, midheaven, partOfFortune, m
         </div>
       )}
 
-      {/* Wuxing tab */}
       {tab === "wuxing" && (
         <div>
-          <h4 style={{ color: "#c9a0dc", fontSize: 14, marginBottom: 8 }}>十干化曜（日干 {bazi.day_pillar.heavenly_stem}）</h4>
-          <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 13 }}>
+          <h4 style={{ color: theme.colors.accent.primary, fontSize: theme.fontSize.lg, marginBottom: theme.spacing.sm }}>十干化曜（日干 {bazi.day_pillar.heavenly_stem}）</h4>
+          <table style={{ borderCollapse: "collapse", width: "100%", fontSize: theme.fontSize.md }}>
             <thead>
-              <tr style={{ borderBottom: "1px solid #333" }}>
-                <th style={{ padding: "4px 8px", textAlign: "left", color: "#888" }}>天干</th>
-                <th style={{ padding: "4px 8px", textAlign: "left", color: "#888" }}>化曜</th>
+              <tr style={{ borderBottom: `1px solid ${theme.colors.border.default}` }}>
+                <TH>天干</TH>
+                <TH>化曜</TH>
               </tr>
             </thead>
             <tbody>
               {shiganhuayao.map(([stem, yao], i) => (
-                <tr key={i} style={{ borderBottom: "1px solid #1a1a2e" }}>
-                  <td style={{ padding: "4px 8px", color: "#e0e0e0" }}>{stem}</td>
-                  <td style={{ padding: "4px 8px", color: "#c9a0dc" }}>{yao}</td>
+                <tr key={i} style={{ borderBottom: `1px solid ${theme.colors.bg.primary}` }}>
+                  <TD>{stem}</TD>
+                  <td style={{ padding: "4px 8px", color: theme.colors.accent.primary, fontSize: theme.fontSize.md }}>{yao}</td>
                 </tr>
               ))}
             </tbody>
           </table>
 
-          <h4 style={{ color: "#c9a0dc", fontSize: 14, margin: "12px 0 8px" }}>喜忌格</h4>
-          <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 13 }}>
+          <h4 style={{ color: theme.colors.accent.primary, fontSize: theme.fontSize.lg, margin: "12px 0 8px" }}>喜忌格</h4>
+          <table style={{ borderCollapse: "collapse", width: "100%", fontSize: theme.fontSize.md }}>
             <thead>
-              <tr style={{ borderBottom: "1px solid #333" }}>
-                <th style={{ padding: "4px 8px", textAlign: "left", color: "#888" }}>星体</th>
-                <th style={{ padding: "4px 8px", textAlign: "left", color: "#888" }}>喜忌</th>
+              <tr style={{ borderBottom: `1px solid ${theme.colors.border.default}` }}>
+                <TH>星体</TH>
+                <TH>喜忌</TH>
               </tr>
             </thead>
             <tbody>
               {xijige.map(([body, rel], i) => (
-                <tr key={i} style={{ borderBottom: "1px solid #1a1a2e" }}>
-                  <td style={{ padding: "4px 8px", color: "#e0e0e0" }}>{body}</td>
-                  <td style={{ padding: "4px 8px", color: rel === "喜" ? "#69F0AE" : rel === "忌" ? "#FF5252" : "#e0e0e0" }}>{rel}</td>
+                <tr key={i} style={{ borderBottom: `1px solid ${theme.colors.bg.primary}` }}>
+                  <TD>{body}</TD>
+                  <td style={{ padding: "4px 8px", color: rel === "喜" ? theme.colors.semantic.green : rel === "忌" ? theme.colors.semantic.red : theme.colors.text.primary, fontSize: theme.fontSize.md }}>{rel}</td>
                 </tr>
               ))}
             </tbody>
@@ -276,3 +276,5 @@ export default function BaziPanel({ bazi, ascendant, midheaven, partOfFortune, m
     </div>
   );
 }
+
+export default memo(BaziPanel);

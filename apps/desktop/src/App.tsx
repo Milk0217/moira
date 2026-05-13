@@ -8,6 +8,7 @@ import PlanetTable from "./components/PlanetTable";
 import BaziPanel from "./components/BaziPanel";
 import ErrorBoundary from "./components/ErrorBoundary";
 import ChartManager from "./components/ChartManager";
+import { theme } from "./theme";
 
 function App() {
   const [chartData, setChartData] = useState<ChartData | null>(null);
@@ -71,38 +72,45 @@ function App() {
     a.click();
   }
 
+  const modeBtnStyle = (isActive: boolean): React.CSSProperties => ({
+    flex: 1, padding: "6px 0", fontSize: theme.fontSize.sm, borderRadius: theme.radius.sm, cursor: "pointer",
+    border: `1px solid ${isActive ? theme.colors.accent.primary : theme.colors.border.default}`,
+    background: isActive ? theme.colors.accent.dark : "transparent",
+    color: isActive ? theme.colors.accent.primary : theme.colors.text.secondary,
+  });
+
+  const zodiacBtnStyle = (isActive: boolean): React.CSSProperties => ({
+    padding: "4px 12px",
+    fontSize: theme.fontSize.sm,
+    borderRadius: theme.radius.sm,
+    border: `1px solid ${isActive ? theme.colors.accent.primary : theme.colors.border.muted}`,
+    background: isActive ? theme.colors.accent.dark : "transparent",
+    color: isActive ? theme.colors.accent.primary : theme.colors.text.secondary,
+    cursor: "pointer",
+  });
+
   return (
     <div style={{ display: "flex", height: "100vh", width: "100vw" }}>
       <div
         style={{
           width: 320,
           minWidth: 320,
-          borderRight: "1px solid #2a2a4a",
-          padding: 24,
+          borderRight: `1px solid ${theme.colors.border.light}`,
+          padding: theme.spacing.xl,
           overflowY: "auto",
-          background: "#16213e",
+          background: theme.colors.bg.secondary,
         }}
       >
-        <div style={{ display: "flex", gap: 4, marginBottom: 16 }}>
-          <button onClick={() => setMode("natal")} style={{
-            flex: 1, padding: "6px 0", fontSize: 12, borderRadius: 4, cursor: "pointer",
-            border: `1px solid ${mode === "natal" ? "#c9a0dc" : "#333"}`,
-            background: mode === "natal" ? "#3a1a5e" : "transparent",
-            color: mode === "natal" ? "#c9a0dc" : "#888",
-          }}>七政四馀</button>
-          <button onClick={() => setMode("electional")} style={{
-            flex: 1, padding: "6px 0", fontSize: 12, borderRadius: 4, cursor: "pointer",
-            border: `1px solid ${mode === "electional" ? "#c9a0dc" : "#333"}`,
-            background: mode === "electional" ? "#3a1a5e" : "transparent",
-            color: mode === "electional" ? "#c9a0dc" : "#888",
-          }}>天星择日</button>
+        <div style={{ display: "flex", gap: theme.spacing.xs, marginBottom: theme.spacing.lg }}>
+          <button onClick={() => setMode("natal")} style={modeBtnStyle(mode === "natal")}>七政四馀</button>
+          <button onClick={() => setMode("electional")} style={modeBtnStyle(mode === "electional")}>天星择日</button>
         </div>
         <h1
           style={{
-            fontSize: 22,
+            fontSize: theme.fontSize.xxl,
             fontWeight: "bold",
-            marginBottom: 24,
-            color: "#c9a0dc",
+            marginBottom: theme.spacing.xl,
+            color: theme.colors.accent.primary,
             letterSpacing: 2,
           }}
         >
@@ -123,9 +131,9 @@ function App() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          padding: 24,
+          padding: theme.spacing.xl,
           overflow: "auto",
-          background: "#1a1a2e",
+          background: theme.colors.bg.primary,
         }}
       >
         {chartData ? (
@@ -134,11 +142,11 @@ function App() {
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              gap: 32,
+              gap: theme.spacing.xxl,
             }}
           >
             {birthInfo && (
-              <div style={{ fontSize: 13, color: "#888", textAlign: "center" }}>
+              <div style={{ fontSize: theme.fontSize.md, color: theme.colors.text.secondary, textAlign: "center" }}>
                 {birthInfo.year}-{String(birthInfo.month).padStart(2, "0")}-
                 {String(birthInfo.day).padStart(2, "0")}{" "}
                 {String(birthInfo.hour).padStart(2, "0")}:
@@ -148,33 +156,25 @@ function App() {
             )}
             <ErrorBoundary
               fallback={
-                <div style={{ color: "#e63946", padding: 40 }}>星盘渲染失败</div>
+                <div style={{ color: theme.colors.semantic.error, padding: 40 }}>星盘渲染失败</div>
               }
             >
               <AstrologyChart bodies={chartBodies} houses={chartData.houses} size={500} />
             </ErrorBoundary>
-            <div style={{ display: "flex", gap: 8 }}>
+            <div style={{ display: "flex", gap: theme.spacing.sm }}>
               <button onClick={handleExport} style={btnStyle}>
                 导出 PNG
               </button>
             </div>
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <span style={{ color: "#888", fontSize: 13 }}>星制:</span>
+            <div style={{ display: "flex", gap: theme.spacing.sm, alignItems: "center" }}>
+              <span style={{ color: theme.colors.text.secondary, fontSize: theme.fontSize.md }}>星制:</span>
               <button
                 onClick={() => {}}
-                style={{
-                  padding: "4px 12px",
-                  fontSize: 12,
-                  borderRadius: 4,
-                  border: `1px solid ${chartData.zodiac_type === "回归" ? "#c9a0dc" : "#555"}`,
-                  background: chartData.zodiac_type === "回归" ? "#3a1a5e" : "transparent",
-                  color: chartData.zodiac_type === "回归" ? "#c9a0dc" : "#888",
-                  cursor: "pointer",
-                }}
+                style={zodiacBtnStyle(chartData.zodiac_type === "回归")}
               >
                 回归制 {chartData.zodiac_type === "回归" ? "✓" : ""}
               </button>
-              <span style={{ color: "#555", fontSize: 11 }}>
+              <span style={{ color: theme.colors.text.tertiary, fontSize: theme.fontSize.xs }}>
                 岁差: {chartData.ayanamsa.toFixed(2)}°
               </span>
             </div>
@@ -200,8 +200,8 @@ function App() {
             />
           </div>
         ) : (
-          <div style={{ color: "#666", fontSize: 16, textAlign: "center" }}>
-            <p style={{ marginBottom: 12, fontSize: 48 }}>✦</p>
+          <div style={{ color: theme.colors.text.muted, fontSize: theme.fontSize.xl, textAlign: "center" }}>
+            <p style={{ marginBottom: theme.spacing.md, fontSize: 48 }}>✦</p>
             <p>输入出生信息，点击"计算星盘"</p>
           </div>
         )}
@@ -213,11 +213,11 @@ function App() {
 const btnStyle: React.CSSProperties = {
   padding: "6px 16px",
   background: "transparent",
-  color: "#c9a0dc",
-  border: "1px solid #c9a0dc",
-  borderRadius: 6,
+  color: theme.colors.accent.primary,
+  border: `1px solid ${theme.colors.accent.primary}`,
+  borderRadius: theme.radius.md,
   cursor: "pointer",
-  fontSize: 13,
+  fontSize: theme.fontSize.md,
 };
 
 export default App;

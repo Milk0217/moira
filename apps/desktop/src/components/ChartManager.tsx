@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { ChartData } from "../types/chart";
+import { theme } from "../theme";
 
 interface Props {
   onLoad: (data: ChartData) => void;
@@ -43,9 +44,9 @@ export default function ChartManager({ onLoad, currentData }: Props) {
         {showManager ? "关闭资料管理" : "资料管理"}
       </button>
       {showManager && (
-        <div style={{ marginTop: 12, padding: 12, background: "#1a1a2e", borderRadius: 8, border: "1px solid #333" }}>
-          <h4 style={{ color: "#c9a0dc", fontSize: 14, marginBottom: 8 }}>保存当前星盘</h4>
-          <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+        <div style={{ marginTop: theme.spacing.md, padding: theme.spacing.md, background: theme.colors.bg.primary, borderRadius: theme.radius.lg, border: `1px solid ${theme.colors.border.default}` }}>
+          <h4 style={{ color: theme.colors.accent.primary, fontSize: theme.fontSize.lg, marginBottom: theme.spacing.sm }}>保存当前星盘</h4>
+          <div style={{ display: "flex", gap: theme.spacing.sm, marginBottom: theme.spacing.lg }}>
             <input
               value={saveName}
               onChange={(e) => setSaveName(e.target.value)}
@@ -56,17 +57,17 @@ export default function ChartManager({ onLoad, currentData }: Props) {
               保存
             </button>
           </div>
-          <h4 style={{ color: "#c9a0dc", fontSize: 14, marginBottom: 8 }}>已保存的星盘</h4>
+          <h4 style={{ color: theme.colors.accent.primary, fontSize: theme.fontSize.lg, marginBottom: theme.spacing.sm }}>已保存的星盘</h4>
           {savedCharts.length === 0 ? (
-            <p style={{ color: "#666", fontSize: 13 }}>暂无保存的星盘</p>
+            <p style={{ color: theme.colors.text.muted, fontSize: theme.fontSize.md }}>暂无保存的星盘</p>
           ) : (
             <ul style={{ listStyle: "none", padding: 0 }}>
               {savedCharts.map((name) => (
-                <li key={name} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #222" }}>
-                  <span style={{ color: "#e0e0e0", fontSize: 13 }}>{name}</span>
+                <li key={name} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: `1px solid ${theme.colors.border.subtle}` }}>
+                  <span style={{ color: theme.colors.text.primary, fontSize: theme.fontSize.md }}>{name}</span>
                   <div style={{ display: "flex", gap: 6 }}>
                     <button onClick={() => handleLoad(name)} style={smallBtnStyle}>加载</button>
-                    <button onClick={() => handleDelete(name)} style={{ ...smallBtnStyle, color: "#e63946", borderColor: "#e63946" }}>删除</button>
+                    <button onClick={() => handleDelete(name)} style={{ ...smallBtnStyle, color: theme.colors.semantic.error, borderColor: theme.colors.semantic.error }}>删除</button>
                   </div>
                 </li>
               ))}
@@ -79,21 +80,21 @@ export default function ChartManager({ onLoad, currentData }: Props) {
 }
 
 const toggleBtnStyle: React.CSSProperties = {
-  width: "100%", padding: "6px 0", background: "transparent", color: "#c9a0dc",
-  border: "1px dashed #c9a0dc", borderRadius: 6, cursor: "pointer", fontSize: 13, marginTop: 12,
+  width: "100%", padding: "6px 0", background: "transparent", color: theme.colors.accent.primary,
+  border: `1px dashed ${theme.colors.accent.primary}`, borderRadius: theme.radius.md, cursor: "pointer", fontSize: theme.fontSize.md, marginTop: theme.spacing.md,
 };
 
 const inputStyle: React.CSSProperties = {
-  flex: 1, padding: "6px 10px", background: "#0f0f23", color: "#e0e0e0",
-  border: "1px solid #333", borderRadius: 4, fontSize: 13, outline: "none",
+  flex: 1, padding: "6px 10px", background: theme.colors.bg.card, color: theme.colors.text.primary,
+  border: `1px solid ${theme.colors.border.default}`, borderRadius: theme.radius.sm, fontSize: theme.fontSize.md, outline: "none",
 };
 
 const actionBtnStyle: React.CSSProperties = {
-  padding: "6px 14px", background: "#3a1a5e", color: "#c9a0dc",
-  border: "1px solid #c9a0dc", borderRadius: 4, cursor: "pointer", fontSize: 12,
+  padding: "6px 14px", background: theme.colors.accent.dark, color: theme.colors.accent.primary,
+  border: `1px solid ${theme.colors.accent.primary}`, borderRadius: theme.radius.sm, cursor: "pointer", fontSize: theme.fontSize.sm,
 };
 
 const smallBtnStyle: React.CSSProperties = {
-  padding: "2px 10px", background: "transparent", color: "#c9a0dc",
-  border: "1px solid #c9a0dc", borderRadius: 4, cursor: "pointer", fontSize: 11,
+  padding: "2px 10px", background: "transparent", color: theme.colors.accent.primary,
+  border: `1px solid ${theme.colors.accent.primary}`, borderRadius: theme.radius.sm, cursor: "pointer", fontSize: theme.fontSize.xs,
 };
