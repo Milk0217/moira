@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { ChartData, BirthInfo } from "./types/chart";
 import InputForm from "./components/InputForm";
+import ElectionalForm from "./components/ElectionalForm";
 import AstrologyChart from "./components/AstrologyChart";
 import PlanetTable from "./components/PlanetTable";
 import BaziPanel from "./components/BaziPanel";
@@ -12,6 +13,7 @@ function App() {
   const [chartData, setChartData] = useState<ChartData | null>(null);
   const [loading, setLoading] = useState(false);
   const [birthInfo, setBirthInfo] = useState<BirthInfo | null>(null);
+  const [mode, setMode] = useState<"natal" | "electional">("natal");
 
   const handleCalculate = useCallback(async (info: BirthInfo) => {
     setLoading(true);
@@ -81,6 +83,20 @@ function App() {
           background: "#16213e",
         }}
       >
+        <div style={{ display: "flex", gap: 4, marginBottom: 16 }}>
+          <button onClick={() => setMode("natal")} style={{
+            flex: 1, padding: "6px 0", fontSize: 12, borderRadius: 4, cursor: "pointer",
+            border: `1px solid ${mode === "natal" ? "#c9a0dc" : "#333"}`,
+            background: mode === "natal" ? "#3a1a5e" : "transparent",
+            color: mode === "natal" ? "#c9a0dc" : "#888",
+          }}>七政四馀</button>
+          <button onClick={() => setMode("electional")} style={{
+            flex: 1, padding: "6px 0", fontSize: 12, borderRadius: 4, cursor: "pointer",
+            border: `1px solid ${mode === "electional" ? "#c9a0dc" : "#333"}`,
+            background: mode === "electional" ? "#3a1a5e" : "transparent",
+            color: mode === "electional" ? "#c9a0dc" : "#888",
+          }}>天星择日</button>
+        </div>
         <h1
           style={{
             fontSize: 22,
@@ -92,7 +108,11 @@ function App() {
         >
           Moira 星盘
         </h1>
-        <InputForm onCalculate={handleCalculate} loading={loading} />
+        {mode === "natal" ? (
+          <InputForm onCalculate={handleCalculate} loading={loading} />
+        ) : (
+          <ElectionalForm onCalculate={handleCalculate} loading={loading} />
+        )}
         <ChartManager onLoad={handleLoadChart} currentData={chartData} />
       </div>
 

@@ -1,0 +1,429 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Introduction to Hifitime"><title>hifitime - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../static.files/rustdoc-b7b9f40b.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="hifitime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.95.0 (59807616e 2026-04-14)" data-channel="1.95.0" data-search-js="search-63369b7b.js" data-stringdex-js="stringdex-b897f86f.js" data-settings-js="settings-170eb4bf.js" ><script src="../static.files/storage-41dd4d93.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-5013f961.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-044be391.svg"></head><body class="rustdoc mod crate"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><rustdoc-topbar><h2><a href="#">Crate hifitime</a></h2></rustdoc-topbar><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../hifitime/index.html">hifitime</a><span class="version">4.2.2</span></h2></div><div class="sidebar-elems"><ul class="block"><li><a id="all-types" href="all.html">All Items</a></li></ul><section id="rustdoc-toc"><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#introduction-to-hifitime" title="Introduction to Hifitime">Introduction to Hifitime</a><ul><li><a href="#usage" title="Usage">Usage</a></li></ul></li><li><a href="#comparison-with-time-and-chrono" title="Comparison with `time` and `chrono`">Comparison with <code>time</code> and <code>chrono</code></a></li><li><a href="#features" title="Features">Features</a><ul><li><a href="#supported-time-scales" title="Supported time scales">Supported time scales</a></li><li><a href="#non-features" title="Non-features">Non-features</a></li></ul></li><li><a href="#design" title="Design">Design</a><ul><li><a href="#duration-1" title="Duration">Duration</a></li><li><a href="#epoch" title="Epoch">Epoch</a></li><li><a href="#leap-second-support" title="Leap second support">Leap second support</a></li><li><a href="#ephemeris-time-vs-dynamic-barycentric-time-tdb" title="Ephemeris Time vs Dynamic Barycentric Time (TDB)">Ephemeris Time vs Dynamic Barycentric Time (TDB)</a></li></ul></li><li><a href="#changelog" title="Changelog">Changelog</a><ul><li><a href="#400" title="4.0.0">4.0.0</a></li><li><a href="#breaking-changes" title="Breaking changes">Breaking changes</a></li><li><a href="#new-features--improvements" title="New features / improvements">New features / improvements</a></li><li><a href="#bug-fixes" title="Bug fixes">Bug fixes</a></li><li><a href="#maintenance" title="Maintenance">Maintenance</a></li><li><a href="#390" title="3.9.0">3.9.0</a></li><li><a href="#385" title="3.8.5">3.8.5</a></li><li><a href="#382" title="3.8.2">3.8.2</a></li><li><a href="#381-unreleased" title="3.8.1 (unreleased)">3.8.1 (unreleased)</a></li><li><a href="#380" title="3.8.0">3.8.0</a></li><li><a href="#370" title="3.7.0">3.7.0</a></li><li><a href="#360" title="3.6.0">3.6.0</a></li><li><a href="#350" title="3.5.0">3.5.0</a></li><li><a href="#340" title="3.4.0">3.4.0</a></li><li><a href="#330" title="3.3.0">3.3.0</a></li><li><a href="#320" title="3.2.0">3.2.0</a></li><li><a href="#310" title="3.1.0">3.1.0</a></li><li><a href="#300" title="3.0.0">3.0.0</a></li></ul></li><li><a href="#important-update-on-versioning-strategy" title="Important Update on Versioning Strategy">Important Update on Versioning Strategy</a></li><li><a href="#development" title="Development">Development</a><ul><li><a href="#python-development" title="Python development">Python development</a></li></ul></li></ul><h3><a href="#reexports">Crate Items</a></h3><ul class="block"><li><a href="#reexports" title="Re-exports">Re-exports</a></li><li><a href="#modules" title="Modules">Modules</a></li><li><a href="#structs" title="Structs">Structs</a></li><li><a href="#enums" title="Enums">Enums</a></li><li><a href="#constants" title="Constants">Constants</a></li><li><a href="#traits" title="Traits">Traits</a></li><li><a href="#functions" title="Functions">Functions</a></li></ul></section><div id="rustdoc-modnav"></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1>Crate <span>hifitime</span>&nbsp;<button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../src/hifitime/lib.rs.html#1-98">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><h2 id="introduction-to-hifitime"><a class="doc-anchor" href="#introduction-to-hifitime">§</a>Introduction to Hifitime</h2>
+<p>Hifitime is a powerful Rust and Python library designed for time management. It provides extensive functionalities with precise operations for time calculation in different time scales, making it suitable for engineering and scientific applications where general relativity and time dilation matter. Hifitime guarantees nanosecond precision for 65,536 years around the reference epoch of the initialization time scale, e.g. 01 January 1900 for TAI. Hifitime is also formally verified using the <a href="https://model-checking.github.io/kani/"><code>Kani</code> model checker</a>, read more about it <a href="https://model-checking.github.io/kani-verifier-blog/2023/03/31/how-kani-helped-find-bugs-in-hifitime.html">this verification here</a>.</p>
+<p>Most users of Hifitime will only need to rely on the <code>Epoch</code> and <code>Duration</code> structures, and optionally the <code>Weekday</code> enum for week based computations. Scientific applications may make use of the <code>TimeScale</code> enum as well.</p>
+<h3 id="usage"><a class="doc-anchor" href="#usage">§</a>Usage</h3>
+<p>First, install <code>hifitime</code> either with <code>cargo add hifitime</code> in your Rust project or <code>pip install hifitime</code> in Python.</p>
+<p>If building from source, note that the Python package is only built if the <code>python</code> feature is enabled.</p>
+<h4 id="epoch-datetime-equivalent"><a class="doc-anchor" href="#epoch-datetime-equivalent">§</a>Epoch (“datetime” equivalent)</h4>
+<p><strong>Create an epoch in different time scales.</strong></p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>hifitime::prelude::<span class="kw-2">*</span>;
+<span class="kw">use </span>core::str::FromStr;
+<span class="comment">// Create an epoch in UTC
+</span><span class="kw">let </span>epoch = Epoch::from_gregorian_utc(<span class="number">2000</span>, <span class="number">2</span>, <span class="number">29</span>, <span class="number">14</span>, <span class="number">57</span>, <span class="number">29</span>, <span class="number">37</span>);
+<span class="comment">// Or from a string
+</span><span class="kw">let </span>epoch_from_str = Epoch::from_str(<span class="string">"2000-02-29T14:57:29.000000037 UTC"</span>).unwrap();
+<span class="macro">assert_eq!</span>(epoch, epoch_from_str);
+<span class="comment">// Creating it from TAI will effectively show the number of leap seconds in between UTC an TAI at that epoch
+</span><span class="kw">let </span>epoch_tai = Epoch::from_gregorian_tai(<span class="number">2000</span>, <span class="number">2</span>, <span class="number">29</span>, <span class="number">14</span>, <span class="number">57</span>, <span class="number">29</span>, <span class="number">37</span>);
+<span class="comment">// The difference between two epochs is a Duration
+</span><span class="kw">let </span>num_leap_s = epoch - epoch_tai;
+<span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">"{num_leap_s}"</span>), <span class="string">"32 s"</span>);
+
+<span class="comment">// Trivially convert to another time scale
+// Either by grabbing a subdivision of time in that time scale
+</span><span class="macro">assert_eq!</span>(epoch.to_gpst_days(), <span class="number">7359.623402777777</span>); <span class="comment">// Compare to the GPS time scale
+
+// Or by fetching the exact duration
+</span><span class="kw">let </span>mjd_offset = Duration::from_str(<span class="string">"51603 days 14 h 58 min 33 s 184 ms 37 ns"</span>).unwrap();
+<span class="macro">assert_eq!</span>(epoch.to_mjd_tt_duration(), mjd_offset); <span class="comment">// Compare to the modified Julian days in the Terrestrial Time time scale.</span></code></pre></div>
+<p>In Python:</p>
+<div class="example-wrap"><pre class="language-python"><code>&gt;&gt;&gt; from hifitime import *
+&gt;&gt;&gt; epoch = Epoch(&quot;2000-02-29T14:57:29.000000037 UTC&quot;)
+&gt;&gt;&gt; epoch
+2000-02-29T14:57:29.000000037 UTC
+&gt;&gt;&gt; epoch_tai = Epoch.init_from_gregorian_tai(2000, 2, 29, 14, 57, 29, 37)
+&gt;&gt;&gt; epoch_tai
+2000-02-29T14:57:29.000000037 TAI
+&gt;&gt;&gt; epoch.timedelta(epoch_tai)
+32 s
+&gt;&gt;&gt; epoch.to_gpst_days()
+7359.623402777777
+&gt;&gt;&gt; epoch.to_mjd_tt_duration()
+51603 days 14 h 58 min 33 s 184 ms 37 ns
+&gt;&gt;&gt; </code></pre></div>
+<p><strong>Hifitime provides several date time formats like RFC2822, ISO8601, or RFC3339.</strong></p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>hifitime::efmt::consts::{ISO8601, RFC2822, RFC3339};
+<span class="kw">use </span>hifitime::prelude::<span class="kw-2">*</span>;
+
+<span class="kw">let </span>epoch = Epoch::from_gregorian_utc(<span class="number">2000</span>, <span class="number">2</span>, <span class="number">29</span>, <span class="number">14</span>, <span class="number">57</span>, <span class="number">29</span>, <span class="number">37</span>);
+<span class="comment">// The default Display shows the UTC time scale
+</span><span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">"{epoch}"</span>), <span class="string">"2000-02-29T14:57:29.000000037 UTC"</span>);
+<span class="comment">// Format it in RFC 2822
+</span><span class="kw">let </span>fmt = Formatter::new(epoch, RFC2822);
+<span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">"{fmt}"</span>), <span class="macro">format!</span>(<span class="string">"Tue, 29 Feb 2000 14:57:29"</span>));
+
+<span class="comment">// Or in ISO8601
+</span><span class="kw">let </span>fmt = Formatter::new(epoch, ISO8601);
+<span class="macro">assert_eq!</span>(
+    <span class="macro">format!</span>(<span class="string">"{fmt}"</span>),
+    <span class="macro">format!</span>(<span class="string">"2000-02-29T14:57:29.000000037 UTC"</span>)
+);
+
+<span class="comment">// Which is somewhat similar to RFC3339
+</span><span class="kw">let </span>fmt = Formatter::new(epoch, RFC3339);
+<span class="macro">assert_eq!</span>(
+    <span class="macro">format!</span>(<span class="string">"{fmt}"</span>),
+    <span class="macro">format!</span>(<span class="string">"2000-02-29T14:57:29.000000037+00:00"</span>)
+);</code></pre></div>
+<p><strong>Need some custom format? Hifitime also supports the C89 token, cf. <a href="https://docs.rs/hifitime/latest/hifitime/efmt/format/struct.Format.html">the documentation</a>.</strong></p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>core::str::FromStr;
+<span class="kw">use </span>hifitime::prelude::<span class="kw-2">*</span>;
+
+<span class="kw">let </span>epoch = Epoch::from_gregorian_utc_hms(<span class="number">2015</span>, <span class="number">2</span>, <span class="number">7</span>, <span class="number">11</span>, <span class="number">22</span>, <span class="number">33</span>);
+
+<span class="comment">// Parsing with a custom format
+</span><span class="macro">assert_eq!</span>(
+    Epoch::from_format_str(<span class="string">"Sat, 07 Feb 2015 11:22:33"</span>, <span class="string">"%a, %d %b %Y %H:%M:%S"</span>).unwrap(),
+    epoch
+);
+
+<span class="comment">// And printing with a custom format
+</span><span class="kw">let </span>fmt = Format::from_str(<span class="string">"%a, %d %b %Y %H:%M:%S"</span>).unwrap();
+<span class="macro">assert_eq!</span>(
+    <span class="macro">format!</span>(<span class="string">"{}"</span>, Formatter::new(epoch, fmt)),
+    <span class="string">"Sat, 07 Feb 2015 11:22:33"
+</span>);</code></pre></div>
+<p><strong>You can also grab the current system time in UTC, if the <code>std</code> feature is enabled (default), and find the next or previous day of the week.</strong></p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>hifitime::prelude::<span class="kw-2">*</span>;
+
+<span class="attr">#[cfg(feature = <span class="string">"std"</span>)]
+</span>{
+    <span class="kw">let </span>now = Epoch::now().unwrap();
+    <span class="macro">println!</span>(<span class="string">"{}"</span>, now.next(Weekday::Tuesday));
+    <span class="macro">println!</span>(<span class="string">"{}"</span>, now.previous(Weekday::Sunday));
+}</code></pre></div>
+<p><strong>Oftentimes, we’ll want to query something at a fixed step between two epochs. Hifitime makes this trivial with <code>TimeSeries</code>.</strong></p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>hifitime::prelude::<span class="kw-2">*</span>;
+
+<span class="kw">let </span>start = Epoch::from_gregorian_utc_at_midnight(<span class="number">2017</span>, <span class="number">1</span>, <span class="number">14</span>);
+<span class="kw">let </span>end = start + <span class="number">12</span>.hours();
+<span class="kw">let </span>step = <span class="number">2</span>.hours();
+
+<span class="kw">let </span>time_series = TimeSeries::inclusive(start, end, step);
+<span class="kw">let </span><span class="kw-2">mut </span>cnt = <span class="number">0</span>;
+<span class="kw">for </span>epoch <span class="kw">in </span>time_series {
+    <span class="attr">#[cfg(feature = <span class="string">"std"</span>)]
+    </span><span class="macro">println!</span>(<span class="string">"{}"</span>, epoch);
+    cnt += <span class="number">1
+</span>}
+<span class="comment">// Check that there are indeed seven two-hour periods in a half a day,
+// including start and end times.
+</span><span class="macro">assert_eq!</span>(cnt, <span class="number">7</span>)</code></pre></div>
+<p>In Python:</p>
+<div class="example-wrap"><pre class="language-python"><code>&gt;&gt;&gt; from hifitime import *
+&gt;&gt;&gt; start = Epoch.init_from_gregorian_utc_at_midnight(2017, 1, 14)
+&gt;&gt;&gt; end = start + Unit.Hour*12
+&gt;&gt;&gt; iterator = TimeSeries(start, end, step=Unit.Hour*2, inclusive=True)
+&gt;&gt;&gt; for epoch in iterator:
+...     print(epoch)
+... 
+2017-01-14T00:00:00 UTC
+2017-01-14T02:00:00 UTC
+2017-01-14T04:00:00 UTC
+2017-01-14T06:00:00 UTC
+2017-01-14T08:00:00 UTC
+2017-01-14T10:00:00 UTC
+2017-01-14T12:00:00 UTC
+&gt;&gt;&gt; 
+</code></pre></div><h4 id="duration"><a class="doc-anchor" href="#duration">§</a>Duration</h4>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>hifitime::prelude::<span class="kw-2">*</span>;
+<span class="kw">use </span>core::str::FromStr;
+
+<span class="comment">// Create a duration using the `TimeUnits` helping trait.
+</span><span class="kw">let </span>d = <span class="number">5</span>.minutes() + <span class="number">7</span>.minutes() + <span class="number">35</span>.nanoseconds();
+<span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">"{d}"</span>), <span class="string">"12 min 35 ns"</span>);
+
+<span class="comment">// Or using the built-in enums
+</span><span class="kw">let </span>d_enum = <span class="number">12 </span>* Unit::Minute + <span class="number">35.0 </span>* Unit::Nanosecond;
+
+<span class="comment">// But it can also be created from a string
+</span><span class="kw">let </span>d_from_str = Duration::from_str(<span class="string">"12 min 35 ns"</span>).unwrap();
+<span class="macro">assert_eq!</span>(d, d_from_str);</code></pre></div>
+<p><strong>Hifitime guarantees nanosecond precision, but most human applications don’t care too much about that. Durations can be rounded to provide a useful approximation for humans.</strong></p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>hifitime::prelude::<span class="kw-2">*</span>;
+
+<span class="comment">// Create a duration using the `TimeUnits` helping trait.
+</span><span class="kw">let </span>d = <span class="number">5</span>.minutes() + <span class="number">7</span>.minutes() + <span class="number">35</span>.nanoseconds();
+<span class="comment">// Round to the nearest minute
+</span><span class="kw">let </span>rounded = d.round(<span class="number">1</span>.minutes());
+<span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">"{rounded}"</span>), <span class="string">"12 min"</span>);
+
+<span class="comment">// And this works on Epochs as well.
+</span><span class="kw">let </span>previous_post = Epoch::from_gregorian_utc_hms(<span class="number">2015</span>, <span class="number">2</span>, <span class="number">7</span>, <span class="number">11</span>, <span class="number">22</span>, <span class="number">33</span>);
+<span class="kw">let </span>example_now = Epoch::from_gregorian_utc_hms(<span class="number">2015</span>, <span class="number">8</span>, <span class="number">17</span>, <span class="number">22</span>, <span class="number">55</span>, <span class="number">01</span>);
+
+<span class="comment">// We'll round to the nearest fifteen days
+</span><span class="kw">let </span>this_much_ago = example_now - previous_post;
+<span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">"{this_much_ago}"</span>), <span class="string">"191 days 11 h 32 min 28 s"</span>);
+<span class="kw">let </span>about_this_much_ago_floor = this_much_ago.floor(<span class="number">15</span>.days());
+<span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">"{about_this_much_ago_floor}"</span>), <span class="string">"180 days"</span>);
+<span class="kw">let </span>about_this_much_ago_ceil = this_much_ago.ceil(<span class="number">15</span>.days());
+<span class="macro">assert_eq!</span>(<span class="macro">format!</span>(<span class="string">"{about_this_much_ago_ceil}"</span>), <span class="string">"195 days"</span>);</code></pre></div>
+<p>In Python:</p>
+<div class="example-wrap"><pre class="language-python"><code>&gt;&gt;&gt; from hifitime import *
+&gt;&gt;&gt; d = Duration(&quot;12 min 32 ns&quot;)
+&gt;&gt;&gt; d.round(Unit.Minute*1)
+12 min
+&gt;&gt;&gt; d
+12 min 32 ns
+&gt;&gt;&gt; </code></pre></div>
+<p><a href="https://crates.io/crates/hifitime"><img src="https://img.shields.io/crates/v/hifitime.svg" alt="hifitime on crates.io" /></a>
+<a href="https://docs.rs/hifitime/"><img src="https://docs.rs/hifitime/badge.svg" alt="hifitime on docs.rs" /></a>
+<a href="https://www.whatrustisit.com"><img src="https://img.shields.io/badge/minimum%20rustc-1.70-yellowgreen?logo=rust" alt="minimum rustc: 1.70" /></a>
+<a href="https://github.com/nyx-space/hifitime/actions"><img src="https://github.com/nyx-space/hifitime/actions/workflows/tests.yml/badge.svg?branch=master" alt="Build Status" /></a>
+<a href="https://github.com/nyx-space/hifitime/actions"><img src="https://github.com/nyx-space/hifitime/actions/workflows/formal_verification.yml/badge.svg?branch=master" alt="Build Status" /></a>
+<a href="https://codecov.io/gh/nyx-space/hifitime"><img src="https://codecov.io/gh/nyx-space/hifitime/branch/master/graph/badge.svg?token=l7zU57rUGs" alt="codecov" /></a></p>
+<h2 id="comparison-with-time-and-chrono"><a class="doc-anchor" href="#comparison-with-time-and-chrono">§</a>Comparison with <code>time</code> and <code>chrono</code></h2>
+<p>First off, both <code>time</code> and <code>chrono</code> are fantastic libraries in their own right. There’s a reason why they have millions and millions of downloads. Secondly, hifitime was started in October 2017, so quite a while before the revival of <code>time</code> (~ 2019).</p>
+<p>One of the key differences is that both <code>chrono</code> and <code>time</code> separate the concepts of “time” and “date.” Hifitime asserts that this is physically invalid: both a time and a date are an offset from a reference in a given time scale. That’s why, Hifitime does not separate the components that make up a date, but instead, only stores a fixed duration with respect to TAI. Moreover, Hifitime is formally verified with a model checker, which is much more thorough than property testing.</p>
+<p>More importantly, neither <code>time</code> nor <code>chrono</code> are suitable for astronomy, astrodynamics, or any physics that must account for time dilation due to relativistic speeds or lack of the Earth as a gravity source (which sets the “tick” of a second).</p>
+<p>Hifitime also natively supports the UT1 time scale (the only “true” time) if built with the <code>ut1</code> feature.</p>
+<h2 id="features"><a class="doc-anchor" href="#features">§</a>Features</h2>
+<ul>
+<li><input disabled="" type="checkbox" checked=""/>
+Initialize a high precision Epoch from the system time in UTC</li>
+<li><input disabled="" type="checkbox" checked=""/>
+Leap seconds (as announced by the IETF on a yearly basis)</li>
+<li><input disabled="" type="checkbox" checked=""/>
+UTC representation with ISO8601 and RFC3339 formatting and blazing fast parsing (45 nanoseconds)</li>
+<li><input disabled="" type="checkbox" checked=""/>
+Trivial support of time arithmetic: addition (e.g. <code>2.hours() + 3.seconds()</code>), subtraction (e.g. <code>2.hours() - 3.seconds()</code>), round/floor/ceil operations (e.g. <code>2.hours().round(3.seconds())</code>)</li>
+<li><input disabled="" type="checkbox" checked=""/>
+Supports ranges of Epochs and TimeSeries (linspace of <code>Epoch</code>s and <code>Duration</code>s)</li>
+<li><input disabled="" type="checkbox" checked=""/>
+Trivial conversion between many time scales</li>
+<li><input disabled="" type="checkbox" checked=""/>
+High fidelity Ephemeris Time / Dynamic Barycentric Time (TDB) computations from <a href="https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB">ESA’s Navipedia</a></li>
+<li><input disabled="" type="checkbox" checked=""/>
+Julian dates and Modified Julian dates</li>
+<li><input disabled="" type="checkbox" checked=""/>
+Embedded device friendly: <code>no-std</code> and <code>const fn</code> where possible</li>
+</ul>
+<p>This library is validated against NASA/NAIF SPICE for the Ephemeris Time to Universal Coordinated Time computations: there are exactly zero nanoseconds of difference between SPICE and hifitime for the computation of ET and UTC after 01 January 1972. Refer to the <a href="#leap-second-support">leap second</a> section for details. Other examples are validated with external references, as detailed on a test-by-test basis.</p>
+<h3 id="supported-time-scales"><a class="doc-anchor" href="#supported-time-scales">§</a>Supported time scales</h3>
+<ul>
+<li>Temps Atomique International (TAI)</li>
+<li>Universal Coordinated Time (UTC)</li>
+<li>Terrestrial Time (TT)</li>
+<li>Ephemeris Time (ET) without the small perturbations as per NASA/NAIF SPICE leap seconds kernel</li>
+<li>Dynamic Barycentric Time (TDB), a higher fidelity ephemeris time</li>
+<li>Global Positioning System (GPST)</li>
+<li>Galileo System Time (GST)</li>
+<li>BeiDou Time (BDT)</li>
+<li>UNIX</li>
+</ul>
+<p>Hifitime offers means to convert between time scales coarsely and precisely.
+The <code>Polynomial</code> structure allows description of the state of a Timescale with respect
+to a reference, as typically needed by precise applications or Timescale monitoring &amp; maintenance.</p>
+<h3 id="non-features"><a class="doc-anchor" href="#non-features">§</a>Non-features</h3>
+<ul>
+<li>Time-agnostic / date-only epochs. Hifitime only supports the combination of date and time, but the <code>Epoch::{at_midnight, at_noon}</code> is provided as helper functions.</li>
+</ul>
+<h2 id="design"><a class="doc-anchor" href="#design">§</a>Design</h2>
+<p>No software is perfect, so please report any issue or bug on <a href="https://github.com/nyx-space/hifitime/issues/new">Github</a>.</p>
+<h3 id="duration-1"><a class="doc-anchor" href="#duration-1">§</a>Duration</h3>
+<p>Under the hood, a Duration is represented as a 16 bit signed integer of centuries (<code>i16</code>) and a 64 bit unsigned integer (<code>u64</code>) of the nanoseconds past that century. The overflowing and underflowing of nanoseconds is handled by changing the number of centuries such that the nanoseconds number never represents more than one century (just over four centuries can be stored in 64 bits).</p>
+<p>Advantages:</p>
+<ol>
+<li>Exact precision of a duration: using a floating point value would cause large durations (e.g. Julian Dates) to have less precision than smaller durations. Durations in hifitime have exactly one nanosecond of precision for 65,536 years.</li>
+<li>Skipping floating point operations allows this library to be used in embedded devices without a floating point unit.</li>
+<li>Duration arithmetics are exact, e.g. one third of an hour is exactly twenty minutes and not “0.33333 hours.”</li>
+</ol>
+<p>Disadvantages:</p>
+<ol>
+<li>Most astrodynamics applications require the computation of a duration in floating point values such as when querying an ephemeris. This design leads to an overhead of about 5.2 nanoseconds according to the benchmarks (<code>Duration to f64 seconds</code> benchmark). You may run the benchmarks with <code>cargo bench</code>.</li>
+</ol>
+<h3 id="epoch"><a class="doc-anchor" href="#epoch">§</a>Epoch</h3>
+<p>The Epoch stores a duration with respect to the reference of a time scale, and that time scale itself. For monotonic time on th Earth, <a href="https://www.iausofa.org/">Standard of Fundamental Astronomy (SOFA)</a> recommends of opting for a glitch-free time scale like TAI (i.e. without discontinuities like leap seconds or non-uniform seconds like TDB).</p>
+<h3 id="leap-second-support"><a class="doc-anchor" href="#leap-second-support">§</a>Leap second support</h3>
+<p>Leap seconds allow TAI (the absolute time reference) and UTC (the civil time reference) to not drift too much. In short, UTC allows humans to see the sun at zenith at noon, whereas TAI does not worry about that. Leap seconds are introduced to allow for UTC to catch up with the absolute time reference of TAI. Specifically, UTC clocks are “stopped” for one second to make up for the accumulated difference between TAI and UTC. These leap seconds are announced several months in advance by IERS, cf. in the <a href="https://data.iana.org/time-zones/data/leap-seconds.list">IETF leap second reference</a>.</p>
+<p>The “placement” of these leap seconds in the formatting of a UTC date is left up to the software: there is no common way to handle this. Some software prevents a second tick, i.e. at 23:59:59 the UTC clock will tick for <em>two seconds</em> (instead of one) before hoping to 00:00:00. Some software, like hifitime, allow UTC dates to be formatted as 23:59:60 on strictly the days when a leap second is inserted. For example, the date <code>2016-12-31 23:59:60 UTC</code> is a valid date in hifitime because a leap second was inserted on 01 Jan 2017.</p>
+<p>As of version <strong>4.1.2</strong>, you may call <code>LatestLeapSeconds::default().is_up_to_date()</code> in Rust and <code>LatestLeapSeconds().is_up_to_date()</code> in Python to check that Hifitime is up to date with the latest leap seconds. In Rust, you’ll need to enable the <code>lts</code> (long term support) crate feature.</p>
+<h4 id="important"><a class="doc-anchor" href="#important">§</a>Important</h4>
+<p>Prior to the first leap second, NAIF SPICE claims that there were nine seconds of difference between TAI and UTC: this is different from the <a href="https://www.iausofa.org/">Standard of Fundamental Astronomy (SOFA)</a>. SOFA’s <code>iauDat</code> function will return non-integer leap seconds from 1960 to 1972. It will return an error for dates prior to 1960. <strong>Hifitime only accounts for leap seconds announced by <a href="https://data.iana.org/time-zones/data/leap-seconds.list">IERS</a></strong> in its computations: there is a ten (10) second jump between TAI and UTC on 01 January 1972. This allows the computation of UNIX time to be a specific offset of TAI in hifitime. However, the prehistoric (pre-1972) leap seconds as returned by SOFA are available in the <code>leap_seconds()</code> method of an epoch if the <code>iers_only</code> parameter is set to false.</p>
+<h3 id="ephemeris-time-vs-dynamic-barycentric-time-tdb"><a class="doc-anchor" href="#ephemeris-time-vs-dynamic-barycentric-time-tdb">§</a>Ephemeris Time vs Dynamic Barycentric Time (TDB)</h3>
+<p>In theory, as of January 2000, ET and TDB should now be identical. <em>However</em>, the NASA NAIF leap seconds files (e.g. <a href="./naif00012.tls">naif00012.tls</a>) use a simplified algorithm to compute the TDB:</p>
+<blockquote>
+<p>Equation [4], which ignores small-period fluctuations, is accurate to about 0.000030 seconds.</p>
+</blockquote>
+<p>In order to provide full interoperability with NAIF, hifitime uses the NAIF algorithm for “ephemeris time” and the <a href="https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB">ESA algorithm</a> for “dynamical barycentric time.” Hence, if exact NAIF behavior is needed, use all of the functions marked as <code>et</code> instead of the <code>tdb</code> functions, such as <code>epoch.to_et_seconds()</code> instead of <code>epoch.to_tdb_seconds()</code>.</p>
+<h2 id="changelog"><a class="doc-anchor" href="#changelog">§</a>Changelog</h2><h3 id="400"><a class="doc-anchor" href="#400">§</a>4.0.0</h3>
+<p><em>This update is not mearly an iteration, but a redesign in how time scale are handled in hifitime, fixing nanosecond rounding errors, and improving the Python user experience. Refer to the <a href="https://nyxspace.com/blog/2024/10/17/hifitime-version-400-a-leap-forward-in-time-management/?utm_source=gh-readme">blog post</a> for details. As of version 4.0.0, Hifitime is licensed under the Mozilla Public License version 2, refer to <a href="https://github.com/nyx-space/hifitime/discussions/274">discussion #274</a> for details.</em></p>
+<h3 id="breaking-changes"><a class="doc-anchor" href="#breaking-changes">§</a>Breaking changes</h3>
+<ul>
+<li>Refactor epoch to keep time in its own time scale by @gwbres and @ChristopherRabotin in <a href="https://github.com/nyx-space/hifitime/pull/280">https://github.com/nyx-space/hifitime/pull/280</a></li>
+<li>Duration serde now human readable + Display of Epoch is now Gregorian in its initialization time scale by @ChristopherRabotin in <a href="https://github.com/nyx-space/hifitime/pull/299">https://github.com/nyx-space/hifitime/pull/299</a></li>
+<li>Improve error handling (switching to <code>snafu</code>) by @ChristopherRabotin in <a href="https://github.com/nyx-space/hifitime/pull/300">https://github.com/nyx-space/hifitime/pull/300</a></li>
+<li>Breaking change: renamed Julian date constants and removed other Julian date constants by @ChristopherRabotin in <a href="https://github.com/nyx-space/hifitime/pull/307">https://github.com/nyx-space/hifitime/pull/307</a></li>
+<li>Minimum Support Rust Version (MSRV) bumped to 1.77.0</li>
+</ul>
+<p><em>Note:</em> as of version 4.0.0, dependency updates will increment the minor version.</p>
+<h3 id="new-features--improvements"><a class="doc-anchor" href="#new-features--improvements">§</a>New features / improvements</h3>
+<ul>
+<li>Support exceptions in Python by @ChristopherRabotin in <a href="https://github.com/nyx-space/hifitime/pull/301">https://github.com/nyx-space/hifitime/pull/301</a></li>
+<li>Add Python regression test for #249 by @ChristopherRabotin in <a href="https://github.com/nyx-space/hifitime/pull/305">https://github.com/nyx-space/hifitime/pull/305</a></li>
+<li>MJD/JDE UTC fix + <code>to_time_scale</code> now available in Python by @ChristopherRabotin in <a href="https://github.com/nyx-space/hifitime/pull/332">https://github.com/nyx-space/hifitime/pull/332</a></li>
+<li>Add Python datetime interop by @ChristopherRabotin in <a href="https://github.com/nyx-space/hifitime/pull/333">https://github.com/nyx-space/hifitime/pull/333</a></li>
+<li>Add autogenerated Kani harnesses by @cvick32 in <a href="https://github.com/nyx-space/hifitime/pull/316">https://github.com/nyx-space/hifitime/pull/316</a></li>
+<li>Kani autogen follow on by @ChristopherRabotin in <a href="https://github.com/nyx-space/hifitime/pull/318">https://github.com/nyx-space/hifitime/pull/318</a></li>
+</ul>
+<h3 id="bug-fixes"><a class="doc-anchor" href="#bug-fixes">§</a>Bug fixes</h3>
+<ul>
+<li>Fix bug in <code>to_gregorian_str</code>  by @ChristopherRabotin in <a href="https://github.com/nyx-space/hifitime/pull/308">https://github.com/nyx-space/hifitime/pull/308</a></li>
+<li>Fix conversion to Gregorian by @ChristopherRabotin in <a href="https://github.com/nyx-space/hifitime/pull/303">https://github.com/nyx-space/hifitime/pull/303</a></li>
+<li>Rename <code>EpochError</code> to <code>HifitimeError</code> and add exception testing by @ChristopherRabotin in <a href="https://github.com/nyx-space/hifitime/pull/315">https://github.com/nyx-space/hifitime/pull/315</a></li>
+<li>Prevent rounding of the GNSS from nanoseconds initializers by @ChristopherRabotin in <a href="https://github.com/nyx-space/hifitime/pull/319">https://github.com/nyx-space/hifitime/pull/319</a></li>
+<li>Fix ceil with zero duration by @cardigan1008 in <a href="https://github.com/nyx-space/hifitime/pull/323">https://github.com/nyx-space/hifitime/pull/323</a></li>
+<li>Fix token exceed in from_str() by @cardigan1008 in <a href="https://github.com/nyx-space/hifitime/pull/324">https://github.com/nyx-space/hifitime/pull/324</a></li>
+</ul>
+<p>The main change in this refactoring is that <code>Epoch</code>s now keep the time in their own time scales. This greatly simplifies conversion between time scales, and ensures that all computations happen in the same time scale as the initialization time scale, then no sub-nanosecond rounding error could be introduced.</p>
+<h3 id="maintenance"><a class="doc-anchor" href="#maintenance">§</a>Maintenance</h3>
+<ul>
+<li>Removed der dependency by @ChristopherRabotin in <a href="https://github.com/nyx-space/hifitime/pull/297">https://github.com/nyx-space/hifitime/pull/297</a></li>
+<li>Refactor epochrs as a module by @ChristopherRabotin in <a href="https://github.com/nyx-space/hifitime/pull/298">https://github.com/nyx-space/hifitime/pull/298</a></li>
+<li>4.0.0 dev gh 237 by @gwbres in <a href="https://github.com/nyx-space/hifitime/pull/289">https://github.com/nyx-space/hifitime/pull/289</a></li>
+<li>Introduce doc_cfg and mark ut1 within ut1 crate feature by @gwbres in <a href="https://github.com/nyx-space/hifitime/pull/321">https://github.com/nyx-space/hifitime/pull/321</a></li>
+<li>Update pyo3 requirement from 0.21.1 to 0.22.0 by @dependabot in <a href="https://github.com/nyx-space/hifitime/pull/312">https://github.com/nyx-space/hifitime/pull/312</a></li>
+<li>Update tabled requirement from 0.15.0 to 0.16.0 by @dependabot in <a href="https://github.com/nyx-space/hifitime/pull/325">https://github.com/nyx-space/hifitime/pull/325</a></li>
+<li>Update lexical-core requirement from 0.8.5 to 1.0.1 by @dependabot in <a href="https://github.com/nyx-space/hifitime/pull/330">https://github.com/nyx-space/hifitime/pull/330</a></li>
+</ul>
+<h3 id="390"><a class="doc-anchor" href="#390">§</a>3.9.0</h3>
+<ul>
+<li>Update to der version 0.7.x.</li>
+<li>Introduce %y formatter by @gwbres in <a href="https://github.com/nyx-space/hifitime/pull/268">https://github.com/nyx-space/hifitime/pull/268</a></li>
+<li><strong>Possible breaking change</strong>: Fix day of year computation by @ChristopherRabotin in <a href="https://github.com/nyx-space/hifitime/pull/273">https://github.com/nyx-space/hifitime/pull/273</a></li>
+</ul>
+<h3 id="385"><a class="doc-anchor" href="#385">§</a>3.8.5</h3>
+<p>Changes from 3.8.2 are only dependency upgrades until this release.</p>
+<p>Minimum Supported Rust version bumped from 1.64 to <strong>1.70</strong>.</p>
+<h3 id="382"><a class="doc-anchor" href="#382">§</a>3.8.2</h3>
+<ul>
+<li>Clarify README and add a section comparing Hifitime to <code>time</code> and <code>chrono</code>, cf. <a href="https://github.com/nyx-space/hifitime/issues/221">#221</a></li>
+<li>Fix incorrect printing of Gregorian dates prior to to 1900, cf. <a href="https://github.com/nyx-space/hifitime/issues/204">#204</a></li>
+</ul>
+<h3 id="381-unreleased"><a class="doc-anchor" href="#381-unreleased">§</a>3.8.1 (unreleased)</h3>
+<ul>
+<li>Fix documentation for the formatter, cf. <a href="https://github.com/nyx-space/hifitime/pull/202">#202</a></li>
+<li>Update MSRV to 1.59 for rayon v 1.10</li>
+</ul>
+<h3 id="380"><a class="doc-anchor" href="#380">§</a>3.8.0</h3>
+<p>Thanks again to <a href="https://github.com/gwbres">@gwbres</a> for his work in this release!</p>
+<ul>
+<li>Fix CI of the formal verification and upload artifacts, cf. <a href="https://github.com/nyx-space/hifitime/pull/179">#179</a></li>
+<li>Introduce time of week construction and conversion by <a href="https://github.com/gwbres">@gwbres</a>, cf.<a href="https://github.com/nyx-space/hifitime/pull/180">#180</a> and <a href="https://github.com/nyx-space/hifitime/pull/188">#188</a></li>
+<li>Fix minor typo in <code>src/timeunits.rs</code> by <a href="https://github.com/gwbres">@gwbres</a>, cf. <a href="https://github.com/nyx-space/hifitime/pull/189">#189</a></li>
+<li>Significantly extend formal verification of <code>Duration</code> and <code>Epoch</code>, and introduce <code>kani::Arbitrary</code> to <code>Duration</code> and <code>Epoch</code> for users to formally verify their use of time, cf. <a href="https://github.com/nyx-space/hifitime/pull/192">#192</a></li>
+<li>It is now possible to specify a Leap Seconds file (in IERS format) using the <code>LeapSecondsFile::from_path</code> (requires the <code>std</code> feature to read the file), cf. <a href="https://github.com/nyx-space/hifitime/issues/43">#43</a>.</li>
+<li>UT1 time scale is now supported! You must build a <code>Ut1Provider</code> structure with data from the JPL Earth Orientation Parameters, or just use <code>Ut1Provider::download_short_from_jpl()</code> to automatically download the data from NASA JPL.</li>
+<li><code>strptime</code> and <code>strftime</code> equivalents from C89 are now supported, cf. <a href="https://github.com/nyx-space/hifitime/issues/181">#181</a>. Please refer to the <a href="https://docs.rs/hifitime/latest/hifitime/efmt/format/struct.Format.html">documentation</a> for important limitations and how to build a custom formatter.</li>
+<li>ISO Day of Year and Day In Year are now supported for initialization of an Epoch (provided a time scale and a year), and formatting, cf. <a href="https://github.com/nyx-space/hifitime/issues/182">#182</a>.</li>
+<li><strong>Python:</strong> the representation of an epoch is now in the time scale it was initialized in</li>
+</ul>
+<h3 id="370"><a class="doc-anchor" href="#370">§</a>3.7.0</h3>
+<p>Huge thanks to <a href="https://github.com/gwbres">@gwbres</a> who put in all of the work for this release. These usability changes allow <a href="https://crates.io/crates/rinex">Rinex</a> to use hifitime, check out this work.</p>
+<ul>
+<li>timescale.rs: derive serdes traits when feasible by @gwbres in <a href="https://github.com/nyx-space/hifitime/pull/167">https://github.com/nyx-space/hifitime/pull/167</a></li>
+<li>timecale.rs: introduce format/display by @gwbres in <a href="https://github.com/nyx-space/hifitime/pull/168">https://github.com/nyx-space/hifitime/pull/168</a></li>
+<li>readme: fix BeiDou typo by @gwbres in <a href="https://github.com/nyx-space/hifitime/pull/169">https://github.com/nyx-space/hifitime/pull/169</a></li>
+<li>epoch: derive Hash by @gwbres in <a href="https://github.com/nyx-space/hifitime/pull/170">https://github.com/nyx-space/hifitime/pull/170</a></li>
+<li>timescale: identify GNSS timescales from standard 3 letter codes by @gwbres in <a href="https://github.com/nyx-space/hifitime/pull/171">https://github.com/nyx-space/hifitime/pull/171</a></li>
+<li>timescale: standard formatting is now available by @gwbres in <a href="https://github.com/nyx-space/hifitime/pull/174">https://github.com/nyx-space/hifitime/pull/174</a></li>
+<li>epoch, duration: improve and fix serdes feature by @gwbres in <a href="https://github.com/nyx-space/hifitime/pull/175">https://github.com/nyx-space/hifitime/pull/175</a></li>
+<li>epoch, timescale: implement default trait by @gwbres in <a href="https://github.com/nyx-space/hifitime/pull/176">https://github.com/nyx-space/hifitime/pull/176</a></li>
+</ul>
+<h3 id="360"><a class="doc-anchor" href="#360">§</a>3.6.0</h3>
+<ul>
+<li>Galileo System Time and BeiDou Time are now supported, huge thanks to <a href="https://github.com/gwbres">@gwbres</a> for all that work!</li>
+<li>Significant speed improvement in the initialization of Epochs from their Gregorian representation, thanks <a href="https://github.com/conradludgate">@conradludgate</a> for <a href="https://github.com/nyx-space/hifitime/pull/160">#160</a>.</li>
+<li>Epoch and Duration now have a <code>min</code> and <code>max</code> function which respectively returns a copy of the epoch/duration that is the smallest or the largest between <code>self</code> and <code>other</code>, cf. <a href="https://github.com/nyx-space/hifitime/issues/164">#164</a>.</li>
+<li><code>Python</code> Duration and Epochs now support the operators <code>&gt;</code>, <code>&gt;=</code>, <code>&lt;</code>, <code>&lt;=</code>, <code>==</code>, and <code>!=</code>. Epoch now supports <code>init_from_gregorian</code> with a time scape, like in Rust. Epochs can also be subtracted from one another using the <code>timedelta</code> function, cf. <a href="https://github.com/nyx-space/hifitime/issues/162">#162</a>.</li>
+<li>TimeSeries can now be formatted in different time scales, cf. <a href="https://github.com/nyx-space/hifitime/issues/163">#163</a></li>
+</ul>
+<h3 id="350"><a class="doc-anchor" href="#350">§</a>3.5.0</h3>
+<ul>
+<li>Epoch now store the time scale that they were defined in: this allows durations to be added in their respective time scales. For example, adding 36 hours to 1971-12-31 at noon when the Epoch is initialized in UTC will lead to a different epoch than adding that same duration to an epoch initialized at the same time in TAI (because the first leap second announced by IERS was on 1972-01-01), cf. the <code>test_add_durations_over_leap_seconds</code> test.</li>
+<li>RFC3339 and ISO8601 fully supported for initialization of an Epoch, including the offset, e.g. <code>Epoch::from_str("1994-11-05T08:15:30-05:00")</code>, cf. <a href="https://github.com/nyx-space/hifitime/issues/73">#73</a>.</li>
+<li>Python package available on PyPI! To build the Python package, you must first install <code>maturin</code> and then build with the <code>python</code> feature flag. For example, <code>maturin develop -F python &amp;&amp; python</code> will build the Python package in debug mode and start a new shell where the package can be imported.</li>
+<li>Fix bug when printing Duration::MIN (or any duration whose centuries are minimizing the number of centuries).</li>
+<li>TimeSeries can now be formatted</li>
+<li>Epoch can now be <code>ceil</code>-ed, <code>floor</code>-ed, and <code>round</code>-ed according to the time scale they were initialized in, cf. <a href="https://github.com/nyx-space/hifitime/issues/145">#145</a>.</li>
+<li>Epoch can now be initialized from Gregorian when specifying the time system: <code>from_gregorian</code>, <code>from_gregorian_hms</code>, <code>from_gregorian_at_noon</code>, <code>from_gregorian_at_midnight</code>.</li>
+<li>Fix bug in Duration when performing operations on durations very close to <code>Duration::MIN</code> (i.e. minus thirty-two centuries).</li>
+<li>Duration parsing now supports multiple units in a string and does not use regular expressions. THis allows it to work with <code>no-std</code>.</li>
+<li>Epoch parsing no longer requires <code>regex</code>.</li>
+<li>Functions are not more idiomatic: all of the <code>as_*</code> functions become <code>to_*</code> and <code>in_*</code> also becomes <code>to_*</code>, cf.  <a href="https://github.com/nyx-space/hifitime/issues/155">#155</a>.</li>
+</ul>
+<h3 id="340"><a class="doc-anchor" href="#340">§</a>3.4.0</h3>
+<ul>
+<li>Ephemeris Time and Dynamical Barycentric Time fixed to use the J2000 reference epoch instead of the J1900 reference epoch. This is a <strong>potentially breaking change</strong> if you relied on the previous one century error when converting from/to ET/TDB into/from UTC <em>and storing the data as a string</em>. There is <strong>no difference</strong> if the original representation was used.</li>
+<li>Ephemeris Time now <strong>strictly</strong> matches NAIF SPICE: <strong>the error between SPICE and hifitime is now zero nanoseconds.</strong> after the introduction of the first leap second. Prior to the first leap second, NAIF SPICE claims that there were nine seconds of difference between TAI and UTC: this is different from SOFA. Hifitime instead does not account for leap seconds in prehistoric (pre-1972) computations at all.</li>
+<li>The <a href="https://www.iausofa.org/2021_0512_C.html"><em>Standard of Fundamentals of Astronomy</em> (SOFA)</a> leap seconds from 1960 to 1972 are now available with the <code>leap_seconds() -&gt; Option&lt;f64&gt;</code> function on an instance of Epoch. <strong>Importantly</strong>, no difference in the behavior of hifitime should be noticed here: the prehistoric leap seconds are ignored in all calculations in hifitime and only provided to meet the SOFA calculations.</li>
+<li><code>Epoch</code> and <code>Duration</code> now have the C memory representation to allow for hifitime to be embedded in C more easily.</li>
+<li><code>Epoch</code> and <code>Duration</code> can now be encoded or decoded as ASN1 DER with the <code>asn1der</code> crate feature (disabled by default).</li>
+</ul>
+<h3 id="330"><a class="doc-anchor" href="#330">§</a>3.3.0</h3>
+<ul>
+<li>Formal verification of the normalization operation on <code>Duration</code>, which in turn guarantees that <code>Epoch</code> operations cannot panic, cf. <a href="https://github.com/nyx-space/hifitime/issues/127">#127</a></li>
+<li>Fix <code>len</code> and <code>size_hint</code> for <code>TimeSeries</code>, cf. <a href="https://github.com/nyx-space/hifitime/issues/131">#131</a>, reported by <a href="https://github.com/d3v-null">@d3v-null</a>, thanks for the find!</li>
+<li><code>Epoch</code> now implements <code>Eq</code> and <code>Ord</code>, cf. <a href="https://github.com/nyx-space/hifitime/pull/133">#133</a>, thanks <a href="https://github.com/mkolopanis">@mkolopanis</a> for the PR!</li>
+<li><code>Epoch</code> can now be printed in different time systems with format modifiers, cf. <a href="https://github.com/nyx-space/hifitime/issues/130">#130</a></li>
+<li>(minor) <code>as_utc_duration</code> in <code>Epoch</code> is now public, cf. <a href="https://github.com/nyx-space/hifitime/issues/129">#129</a></li>
+<li>(minor) The whole crate now uses <code>num-traits</code> thereby skipping the explicit use of <code>libm</code>. Basically, operations on <code>f64</code> look like normal Rust again, cf. <a href="https://github.com/nyx-space/hifitime/issues/128">#128</a></li>
+<li>(minor) Move the tests to their own folder to make it obvious that this is thoroughly tested</li>
+</ul>
+<h3 id="320"><a class="doc-anchor" href="#320">§</a>3.2.0</h3>
+<ul>
+<li>Fix no-std implementation by using <code>libm</code> for non-core f64 operations</li>
+<li>Add UNIX timestamp, thanks <a href="https://github.com/mkolopanis">@mkolopanis</a></li>
+<li>Enums now derive <code>Eq</code> and some derive <code>Ord</code> (where relevant) <a href="https://github.com/nyx-space/hifitime/issues/118">#118</a></li>
+<li>Use const fn where possible and switch to references where possible <a href="https://github.com/nyx-space/hifitime/issues/119">#119</a></li>
+<li>Allow extracting the centuries and nanoseconds of a <code>Duration</code> and <code>Epoch</code>, respectively with to_parts and to_tai_parts <a href="https://github.com/nyx-space/hifitime/issues/122">#122</a></li>
+<li>Add <code>ceil</code>, <code>floor</code>, <code>round</code> operations to <code>Epoch</code> and <code>Duration</code></li>
+</ul>
+<h3 id="310"><a class="doc-anchor" href="#310">§</a>3.1.0</h3>
+<ul>
+<li>Add <code>#![no_std]</code> support</li>
+<li>Add <code>to_parts</code> to <code>Duration</code> to extract the centuries and nanoseconds of a duration</li>
+<li>Allow building an <code>Epoch</code> from its duration and parts in TAI system</li>
+<li>Add pure nanosecond (<code>u64</code>) constructor and getter for GPST since GPS based clocks will count in nanoseconds</li>
+</ul>
+<h4 id="possibly-breaking-change"><a class="doc-anchor" href="#possibly-breaking-change">§</a>Possibly breaking change</h4>
+<ul>
+<li><code>Errors::ParseError</code> no longer contains a <code>String</code> but an enum <code>ParsingErrors</code> instead. This is considered possibly breaking because it would only break code in the cases where a datetime parsing or unit parsing was caught and handled (uncommon). Moreover, the output is still <code>Display</code>-able.</li>
+</ul>
+<h3 id="300"><a class="doc-anchor" href="#300">§</a>3.0.0</h3>
+<ul>
+<li>Backend rewritten from TwoFloat to a struct of the centuries in <code>i16</code> and nanoseconds in <code>u64</code>. Thanks to <a href="https://github.com/pwnorbitals">@pwnorbitals</a> for proposing the idea in #<a href="https://github.com/nyx-space/hifitime/issues/107">107</a> and writing the proof of concept. This leads to at least a 2x speed up in most calculations, cf. <a href="https://github.com/nyx-space/hifitime/pull/107#issuecomment-1040702004">this comment</a>.</li>
+<li>Fix GPS epoch, and addition of a helper functions in <code>Epoch</code> by <a href="https://github.com/cjordan">@cjordan</a></li>
+</ul>
+<h2 id="important-update-on-versioning-strategy"><a class="doc-anchor" href="#important-update-on-versioning-strategy">§</a>Important Update on Versioning Strategy</h2>
+<p>We want to inform our users of an important change in Hifitime’s versioning approach. Starting with version 3.9.0, minor version updates may include changes that could potentially break backward compatibility. While we strive to maintain stability and minimize disruptions, this change allows us to incorporate significant improvements and adapt more swiftly to evolving user needs. We recommend users to carefully review the release notes for each update, even minor ones, to understand any potential impacts on their existing implementations. Our commitment to providing a robust and dynamic time management library remains steadfast, and we believe this change in versioning will better serve the evolving demands of our community.</p>
+<h2 id="development"><a class="doc-anchor" href="#development">§</a>Development</h2>
+<p>Thanks for considering to help out on Hifitime!</p>
+<p>For Rust development, <code>cargo</code> is all you need, along with build tools for the minimum supported Rust version.</p>
+<h3 id="python-development"><a class="doc-anchor" href="#python-development">§</a>Python development</h3>
+<p>First, please install <a href="https://www.maturin.rs/">maturin</a> and set up a Python virtual environment from which to develop. Also make sure that the package version in Cargo.toml is <em>greater</em> than any published version. For example, if the latest version published on <a href="https://pypi.org/project/hifitime/">PyPi</a> is 4.0.0-a.0 (for alpha-0), make sure that you change the Cargo.toml file such that you’re at least in version <code>alpha-1</code>, or the <code>pip install</code> will download from PyPi instead of installing from the local folder. To run the Python tests, you must install <code>pytest</code> in your virtual environment.</p>
+<p>The exact steps should be:</p>
+<ol>
+<li>Jump into the virtual environment: <code>source .venv/bin/activate</code> (e.g.)</li>
+<li>Make sure pytest is installed: <code>pip install pytest</code></li>
+<li>Build hifitime specifying the output folder of the Python egg: <code>maturin build -F python --out dist</code></li>
+<li>Install the egg: <code>pip install dist/hifitime-4.0.0.alpha1-cp311-cp311-linux_x86_64.whl</code></li>
+<li>Run the tests using the environmental pytest: <code>.venv/bin/pytest</code></li>
+</ol>
+<h4 id="type-hinting"><a class="doc-anchor" href="#type-hinting">§</a>Type hinting</h4>
+<p>Hifitime uses the approach from <a href="https://github.com/dora-rs/dora/pull/493"><code>dora</code></a> to enable type hinting in IDEs. This approach requires running <code>maturin</code> twice: once to generate to the bindings and a second time for it to incorporate the <code>pyi</code> file.</p>
+<div class="example-wrap"><pre class="language-bash"><code>maturin develop -F python;
+python generate_stubs.py hifitime hifitime.pyi;
+maturin develop</code></pre></div></div></details><h2 id="reexports" class="section-header">Re-exports<a href="#reexports" class="anchor">§</a></h2><dl class="item-table reexports"><dt id="reexport.DurationError"><code>pub use errors::<a class="enum" href="errors/enum.DurationError.html" title="enum hifitime::errors::DurationError">DurationError</a>;</code></dt><dt id="reexport.HifitimeError"><code>pub use errors::<a class="enum" href="errors/enum.HifitimeError.html" title="enum hifitime::errors::HifitimeError">HifitimeError</a>;</code></dt><dt id="reexport.ParsingError"><code>pub use errors::<a class="enum" href="errors/enum.ParsingError.html" title="enum hifitime::errors::ParsingError">ParsingError</a>;</code></dt><dt id="reexport.Freq"><code>pub use crate::<a class="enum" href="enum.Freq.html" title="enum hifitime::Freq">Freq</a>;</code></dt><dt id="reexport.Frequencies"><code>pub use crate::<a class="trait" href="trait.Frequencies.html" title="trait hifitime::Frequencies">Frequencies</a>;</code></dt><dt id="reexport.TimeUnits"><code>pub use crate::<a class="trait" href="trait.TimeUnits.html" title="trait hifitime::TimeUnits">TimeUnits</a>;</code></dt><dt id="reexport.Unit"><code>pub use crate::<a class="enum" href="enum.Unit.html" title="enum hifitime::Unit">Unit</a>;</code></dt></dl><h2 id="modules" class="section-header">Modules<a href="#modules" class="anchor">§</a></h2><dl class="item-table"><dt><a class="mod" href="efmt/index.html" title="mod hifitime::efmt">efmt</a></dt><dt><a class="mod" href="errors/index.html" title="mod hifitime::errors">errors</a></dt><dt><a class="mod" href="initializers/index.html" title="mod hifitime::initializers">initializers</a></dt><dt><a class="mod" href="leap_seconds/index.html" title="mod hifitime::leap_seconds">leap_<wbr>seconds</a></dt><dt><a class="mod" href="ops/index.html" title="mod hifitime::ops">ops</a></dt><dt><a class="mod" href="parse/index.html" title="mod hifitime::parse">parse</a></dt><dt><a class="mod" href="prelude/index.html" title="mod hifitime::prelude">prelude</a></dt></dl><h2 id="structs" class="section-header">Structs<a href="#structs" class="anchor">§</a></h2><dl class="item-table"><dt><a class="struct" href="struct.Duration.html" title="struct hifitime::Duration">Duration</a></dt><dd>Defines generally usable durations for nanosecond precision valid for 32,768 centuries in either direction, and only on 80 bits / 10 octets.</dd><dt><a class="struct" href="struct.Epoch.html" title="struct hifitime::Epoch">Epoch</a></dt><dd>Defines a nanosecond-precision Epoch.</dd><dt><a class="struct" href="struct.Polynomial.html" title="struct hifitime::Polynomial">Polynomial</a></dt><dd>Interpolation <a href="struct.Polynomial.html" title="struct hifitime::Polynomial">Polynomial</a> used for example in <a href="enum.TimeScale.html" title="enum hifitime::TimeScale">TimeScale</a>
+maintenance, precise monitoring or conversions.</dd><dt><a class="struct" href="struct.TimeSeries.html" title="struct hifitime::TimeSeries">Time<wbr>Series</a></dt><dd>An iterator of a sequence of evenly spaced Epochs.</dd></dl><h2 id="enums" class="section-header">Enums<a href="#enums" class="anchor">§</a></h2><dl class="item-table"><dt><a class="enum" href="enum.Freq.html" title="enum hifitime::Freq">Freq</a></dt><dd>An Enum to convert frequencies to their approximate duration, <strong>rounded to the closest nanosecond</strong>.</dd><dt><a class="enum" href="enum.MonthName.html" title="enum hifitime::MonthName">Month<wbr>Name</a></dt><dd>Defines Month names, can be initialized either from its variant or its integer (1 for January).</dd><dt><a class="enum" href="enum.TimeScale.html" title="enum hifitime::TimeScale">Time<wbr>Scale</a></dt><dd>Enum of the different time systems available</dd><dt><a class="enum" href="enum.Unit.html" title="enum hifitime::Unit">Unit</a></dt><dd>An Enum to perform time unit conversions.</dd><dt><a class="enum" href="enum.Weekday.html" title="enum hifitime::Weekday">Weekday</a></dt></dl><h2 id="constants" class="section-header">Constants<a href="#constants" class="anchor">§</a></h2><dl class="item-table"><dt><a class="constant" href="constant.BDT_REF_EPOCH.html" title="constant hifitime::BDT_REF_EPOCH">BDT_<wbr>REF_<wbr>EPOCH</a></dt><dd>BDT(BeiDou): 2005 Dec 31st Midnight
+BDT (BeiDou) reference epoch is 2005 December 31st UTC at midnight. <strong>This time scale is synchronized with UTC.</strong>
+|UTC - TAI| = XX Leap Seconds on that day.</dd><dt><a class="constant" href="constant.DAYS_GPS_TAI_OFFSET.html" title="constant hifitime::DAYS_GPS_TAI_OFFSET">DAYS_<wbr>GPS_<wbr>TAI_<wbr>OFFSET</a></dt><dt><a class="constant" href="constant.DAYS_PER_CENTURY.html" title="constant hifitime::DAYS_PER_CENTURY">DAYS_<wbr>PER_<wbr>CENTURY</a></dt><dd><code>DAYS_PER_CENTURY</code> corresponds to the number of days per century in the Julian calendar.</dd><dt><a class="constant" href="constant.DAYS_PER_CENTURY_I64.html" title="constant hifitime::DAYS_PER_CENTURY_I64">DAYS_<wbr>PER_<wbr>CENTURY_<wbr>I64</a></dt><dt><a class="constant" href="constant.DAYS_PER_CENTURY_U64.html" title="constant hifitime::DAYS_PER_CENTURY_U64">DAYS_<wbr>PER_<wbr>CENTURY_<wbr>U64</a></dt><dt><a class="constant" href="constant.DAYS_PER_WEEK.html" title="constant hifitime::DAYS_PER_WEEK">DAYS_<wbr>PER_<wbr>WEEK</a></dt><dt><a class="constant" href="constant.DAYS_PER_WEEK_I64.html" title="constant hifitime::DAYS_PER_WEEK_I64">DAYS_<wbr>PER_<wbr>WEEK_<wbr>I64</a></dt><dt><a class="constant" href="constant.DAYS_PER_YEAR.html" title="constant hifitime::DAYS_PER_YEAR">DAYS_<wbr>PER_<wbr>YEAR</a></dt><dd><code>DAYS_PER_YEAR</code> corresponds to the number of days per year in the Julian calendar.</dd><dt><a class="constant" href="constant.DAYS_PER_YEAR_NLD.html" title="constant hifitime::DAYS_PER_YEAR_NLD">DAYS_<wbr>PER_<wbr>YEAR_<wbr>NLD</a></dt><dd><code>DAYS_PER_YEAR_NLD</code> corresponds to the number of days per year <strong>without leap days</strong>.</dd><dt><a class="constant" href="constant.ET_EPOCH_S.html" title="constant hifitime::ET_EPOCH_S">ET_<wbr>EPOCH_<wbr>S</a></dt><dd>The Ephemeris Time epoch, in seconds</dd><dt><a class="constant" href="constant.GPST_REF_EPOCH.html" title="constant hifitime::GPST_REF_EPOCH">GPST_<wbr>REF_<wbr>EPOCH</a></dt><dt><a class="constant" href="constant.GST_REF_EPOCH.html" title="constant hifitime::GST_REF_EPOCH">GST_<wbr>REF_<wbr>EPOCH</a></dt><dd>GST (Galileo) reference epoch is 13 seconds before 1999 August 21 UTC at midnight.
+|UTC - TAI| = XX Leap Seconds on that day.</dd><dt><a class="constant" href="constant.J1900_REF_EPOCH.html" title="constant hifitime::J1900_REF_EPOCH">J1900_<wbr>REF_<wbr>EPOCH</a></dt><dd>The J1900 reference epoch (1900-01-01 at noon) TAI.</dd><dt><a class="constant" href="constant.J2000_REF_EPOCH.html" title="constant hifitime::J2000_REF_EPOCH">J2000_<wbr>REF_<wbr>EPOCH</a></dt><dd>The J2000 reference epoch (2000-01-01 at midnight) TAI.
+|UTC - TAI| = XX Leap Seconds on that day.</dd><dt><a class="constant" href="constant.JD_J1900.html" title="constant hifitime::JD_J1900">JD_<wbr>J1900</a></dt><dd>Julian date for the J1900 epoch, as per NAIF SPICE.</dd><dt><a class="constant" href="constant.JD_J2000.html" title="constant hifitime::JD_J2000">JD_<wbr>J2000</a></dt><dd>Julian date for the J2000 epoch, as per NAIF SPICE.</dd><dt><a class="constant" href="constant.MJD_J1900.html" title="constant hifitime::MJD_J1900">MJD_<wbr>J1900</a></dt><dd>Julian days between 01 Jan 1900 at midnight and the Modified Julian Day at 17 November 1858.</dd><dt><a class="constant" href="constant.MJD_J2000.html" title="constant hifitime::MJD_J2000">MJD_<wbr>J2000</a></dt><dd>Julian days between 01 Jan 2000 at <strong>noon</strong> and the Modified Julian Day at 17 November 1858.</dd><dt><a class="constant" href="constant.MJD_OFFSET.html" title="constant hifitime::MJD_OFFSET">MJD_<wbr>OFFSET</a></dt><dd>Modified Julian Date in seconds as defined <a href="http://tycho.usno.navy.mil/mjd.html">here</a>. MJD epoch is Modified Julian Day at 17 November 1858 at midnight.</dd><dt><a class="constant" href="constant.NAIF_EB.html" title="constant hifitime::NAIF_EB">NAIF_EB</a></dt><dd>NAIF leap second kernel data for EB used to calculate the eccentric anomaly of the heliocentric orbit of the Earth-Moon barycenter.</dd><dt><a class="constant" href="constant.NAIF_K.html" title="constant hifitime::NAIF_K">NAIF_K</a></dt><dd>NAIF leap second kernel data used to calculate the difference between ET and TAI.</dd><dt><a class="constant" href="constant.NAIF_M0.html" title="constant hifitime::NAIF_M0">NAIF_M0</a></dt><dd>NAIF leap second kernel data for M_0 used to calculate the mean anomaly of the heliocentric orbit of the Earth-Moon barycenter.</dd><dt><a class="constant" href="constant.NAIF_M1.html" title="constant hifitime::NAIF_M1">NAIF_M1</a></dt><dd>NAIF leap second kernel data for M_1 used to calculate the mean anomaly of the heliocentric orbit of the Earth-Moon barycenter.</dd><dt><a class="constant" href="constant.NANOSECONDS_PER_CENTURY.html" title="constant hifitime::NANOSECONDS_PER_CENTURY">NANOSECONDS_<wbr>PER_<wbr>CENTURY</a></dt><dt><a class="constant" href="constant.NANOSECONDS_PER_DAY.html" title="constant hifitime::NANOSECONDS_PER_DAY">NANOSECONDS_<wbr>PER_<wbr>DAY</a></dt><dt><a class="constant" href="constant.NANOSECONDS_PER_HOUR.html" title="constant hifitime::NANOSECONDS_PER_HOUR">NANOSECONDS_<wbr>PER_<wbr>HOUR</a></dt><dt><a class="constant" href="constant.NANOSECONDS_PER_MICROSECOND.html" title="constant hifitime::NANOSECONDS_PER_MICROSECOND">NANOSECONDS_<wbr>PER_<wbr>MICROSECOND</a></dt><dt><a class="constant" href="constant.NANOSECONDS_PER_MILLISECOND.html" title="constant hifitime::NANOSECONDS_PER_MILLISECOND">NANOSECONDS_<wbr>PER_<wbr>MILLISECOND</a></dt><dt><a class="constant" href="constant.NANOSECONDS_PER_MINUTE.html" title="constant hifitime::NANOSECONDS_PER_MINUTE">NANOSECONDS_<wbr>PER_<wbr>MINUTE</a></dt><dt><a class="constant" href="constant.NANOSECONDS_PER_SECOND.html" title="constant hifitime::NANOSECONDS_PER_SECOND">NANOSECONDS_<wbr>PER_<wbr>SECOND</a></dt><dt><a class="constant" href="constant.QZSST_REF_EPOCH.html" title="constant hifitime::QZSST_REF_EPOCH">QZSST_<wbr>REF_<wbr>EPOCH</a></dt><dd>QZSS and GPS share the same reference epoch.</dd><dt><a class="constant" href="constant.SECONDS_BDT_TAI_OFFSET.html" title="constant hifitime::SECONDS_BDT_TAI_OFFSET">SECONDS_<wbr>BDT_<wbr>TAI_<wbr>OFFSET</a></dt><dt><a class="constant" href="constant.SECONDS_BDT_TAI_OFFSET_I64.html" title="constant hifitime::SECONDS_BDT_TAI_OFFSET_I64">SECONDS_<wbr>BDT_<wbr>TAI_<wbr>OFFSET_<wbr>I64</a></dt><dt><a class="constant" href="constant.SECONDS_GPS_TAI_OFFSET.html" title="constant hifitime::SECONDS_GPS_TAI_OFFSET">SECONDS_<wbr>GPS_<wbr>TAI_<wbr>OFFSET</a></dt><dt><a class="constant" href="constant.SECONDS_GPS_TAI_OFFSET_I64.html" title="constant hifitime::SECONDS_GPS_TAI_OFFSET_I64">SECONDS_<wbr>GPS_<wbr>TAI_<wbr>OFFSET_<wbr>I64</a></dt><dt><a class="constant" href="constant.SECONDS_GST_TAI_OFFSET.html" title="constant hifitime::SECONDS_GST_TAI_OFFSET">SECONDS_<wbr>GST_<wbr>TAI_<wbr>OFFSET</a></dt><dt><a class="constant" href="constant.SECONDS_GST_TAI_OFFSET_I64.html" title="constant hifitime::SECONDS_GST_TAI_OFFSET_I64">SECONDS_<wbr>GST_<wbr>TAI_<wbr>OFFSET_<wbr>I64</a></dt><dt><a class="constant" href="constant.SECONDS_PER_CENTURY.html" title="constant hifitime::SECONDS_PER_CENTURY">SECONDS_<wbr>PER_<wbr>CENTURY</a></dt><dd><code>SECONDS_PER_CENTURY</code> defines the number of seconds per century.</dd><dt><a class="constant" href="constant.SECONDS_PER_DAY.html" title="constant hifitime::SECONDS_PER_DAY">SECONDS_<wbr>PER_<wbr>DAY</a></dt><dd><code>SECONDS_PER_DAY</code> defines the number of seconds per day.</dd><dt><a class="constant" href="constant.SECONDS_PER_DAY_I64.html" title="constant hifitime::SECONDS_PER_DAY_I64">SECONDS_<wbr>PER_<wbr>DAY_<wbr>I64</a></dt><dt><a class="constant" href="constant.SECONDS_PER_HOUR.html" title="constant hifitime::SECONDS_PER_HOUR">SECONDS_<wbr>PER_<wbr>HOUR</a></dt><dd><code>SECONDS_PER_HOUR</code> defines the number of seconds per hour.</dd><dt><a class="constant" href="constant.SECONDS_PER_MINUTE.html" title="constant hifitime::SECONDS_PER_MINUTE">SECONDS_<wbr>PER_<wbr>MINUTE</a></dt><dd><code>SECONDS_PER_MINUTE</code> defines the number of seconds per minute.</dd><dt><a class="constant" href="constant.SECONDS_PER_SIDEREAL_YEAR.html" title="constant hifitime::SECONDS_PER_SIDEREAL_YEAR">SECONDS_<wbr>PER_<wbr>SIDEREAL_<wbr>YEAR</a></dt><dd><code>SECONDS_PER_SIDEREAL_YEAR</code> corresponds to the number of seconds per sidereal year from <a href="https://www.nist.gov/pml/special-publication-811/nist-guide-si-appendix-b-conversion-factors/nist-guide-si-appendix-b9#TIME">NIST</a>.</dd><dt><a class="constant" href="constant.SECONDS_PER_TROPICAL_YEAR.html" title="constant hifitime::SECONDS_PER_TROPICAL_YEAR">SECONDS_<wbr>PER_<wbr>TROPICAL_<wbr>YEAR</a></dt><dd><code>SECONDS_PER_TROPICAL_YEAR</code> corresponds to the number of seconds per tropical year from <a href="https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/C/cspice/tyear_c.html">NAIF SPICE</a>.</dd><dt><a class="constant" href="constant.SECONDS_PER_YEAR.html" title="constant hifitime::SECONDS_PER_YEAR">SECONDS_<wbr>PER_<wbr>YEAR</a></dt><dd><code>SECONDS_PER_YEAR</code> corresponds to the number of seconds per julian year from <a href="https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/C/cspice/jyear_c.html">NAIF SPICE</a>.</dd><dt><a class="constant" href="constant.SECONDS_PER_YEAR_I64.html" title="constant hifitime::SECONDS_PER_YEAR_I64">SECONDS_<wbr>PER_<wbr>YEAR_<wbr>I64</a></dt><dt><a class="constant" href="constant.UNIX_REF_EPOCH.html" title="constant hifitime::UNIX_REF_EPOCH">UNIX_<wbr>REF_<wbr>EPOCH</a></dt><dd>The UNIX reference epoch of 1970-01-01 in TAI duration, accounting only for IERS leap seconds.</dd></dl><h2 id="traits" class="section-header">Traits<a href="#traits" class="anchor">§</a></h2><dl class="item-table"><dt><a class="trait" href="trait.Frequencies.html" title="trait hifitime::Frequencies">Frequencies</a></dt><dd>A trait to automatically convert some primitives to an approximate frequency as a duration.</dd><dt><a class="trait" href="trait.TimeUnits.html" title="trait hifitime::TimeUnits">Time<wbr>Units</a></dt><dd>A trait to automatically convert some primitives to a duration</dd></dl><h2 id="functions" class="section-header">Functions<a href="#functions" class="anchor">§</a></h2><dl class="item-table"><dt><a class="fn" href="fn.is_gregorian_valid.html" title="fn hifitime::is_gregorian_valid">is_<wbr>gregorian_<wbr>valid</a></dt><dd>Returns true if the provided Gregorian date is valid. Leap second days may have 60 seconds.</dd></dl></section></div></main></body></html>

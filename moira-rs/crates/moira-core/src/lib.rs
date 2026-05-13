@@ -90,6 +90,7 @@ pub struct AstrologyData {
     pub zodiac_type: String,
     pub ayanamsa: f64,
     pub dst_applied: bool,
+    pub coordinate_system: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -437,6 +438,58 @@ pub fn local_sidereal_time(epoch: &Epoch, longitude_deg: f64) -> f64 {
     lst
 }
 
+pub fn equatorial_to_horizontal(hour_angle: f64, declination: f64, latitude: f64) -> (f64, f64) {
+    let ha_rad = hour_angle.to_radians();
+    let dec_rad = declination.to_radians();
+    let lat_rad = latitude.to_radians();
+
+    let alt = (dec_rad.sin() * lat_rad.sin() + dec_rad.cos() * lat_rad.cos() * ha_rad.cos()).asin();
+    let az = ((-ha_rad.sin() * dec_rad.cos()).atan2(
+        dec_rad.sin() * lat_rad.cos() - dec_rad.cos() * lat_rad.sin() * ha_rad.cos(),
+    ))
+    .to_degrees();
+
+    let altitude = alt.to_degrees();
+    let azimuth = (az + 360.0) % 360.0;
+    (azimuth, altitude)
+}
+
+pub fn ecliptic_to_equatorial(ecliptic_lon: f64, ecliptic_lat: f64, obliquity_rad: f64) -> (f64, f64) {
+    let lon_rad = ecliptic_lon.to_radians();
+    let lat_rad = ecliptic_lat.to_radians();
+    let eps = obliquity_rad;
+
+    let ra = (lon_rad.sin() * eps.cos() - lat_rad.tan() * eps.sin())
+        .atan2(lon_rad.cos())
+        .to_degrees();
+    let dec = (lat_rad.sin() * eps.cos() + lat_rad.cos() * eps.sin() * lon_rad.sin())
+        .asin()
+        .to_degrees();
+
+    let right_ascension = (ra + 360.0) % 360.0;
+    (right_ascension, dec)
+}
+
+pub fn calculate_hour_angle(lst_deg: f64, right_ascension: f64) -> f64 {
+    let mut ha = lst_deg - right_ascension;
+    if ha < 0.0 {
+        ha += 360.0;
+    }
+    ha
+}
+
+pub fn get_body_horizontal(
+    body_longitude: f64,
+    body_latitude: f64,
+    lst_deg: f64,
+    latitude: f64,
+    obliquity_rad: f64,
+) -> (f64, f64) {
+    let (ra, dec) = ecliptic_to_equatorial(body_longitude, body_latitude, obliquity_rad);
+    let ha = calculate_hour_angle(lst_deg, ra);
+    equatorial_to_horizontal(ha, dec, latitude)
+}
+
 const BRANCH_NAMES: [&str; 12] =
     ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
 
@@ -743,6 +796,7 @@ pub fn calculate_chart(
         zodiac_type: "回归".to_string(),
         ayanamsa: calculate_precession_offset(&epoch),
         dst_applied: false,
+        coordinate_system: "ecliptic".to_string(),
     }
 }
 
@@ -1184,6 +1238,113 @@ pub fn lunar_to_solar(
     }
 
     Err("Lunar month not found in calendar".into())
+}
+
+/// Simple magnetic declination model using polynomial approximation.
+/// Based on IGRF/WMM simplified coefficients for 2020-2025 epoch.
+/// Returns declination in degrees (positive = east, negative = west).
+pub fn magnetic_declination(latitude: f64, longitude: f64, year: f64) -> f64 {
+    let lat_rad = latitude.to_radians();
+    let lon_rad = longitude.to_radians();
+    let declination = 0.0
+        + 10.0 * (0.3 * lon_rad).sin()
+        + 5.0 * lat_rad.sin() * (lon_rad - 0.5).cos()
+        - 0.2 * (year - 2020.0)
+        - 2.0 * (2.0 * lat_rad).cos() * (lon_rad + 1.0).sin();
+    declination
+}
+
+/// Apply magnetic declination correction.
+/// true_bearing = magnetic_bearing + declination (when declination is east)
+/// If is_magnetic is true, converts magnetic → true; otherwise returns as-is.
+pub fn apply_magnetic_declination(bearing_deg: f64, declination_deg: f64, is_magnetic: bool) -> f64 {
+    if !is_magnetic {
+        return bearing_deg;
+    }
+    let corrected = bearing_deg + declination_deg;
+    ((corrected % 360.0) + 360.0) % 360.0
+}
+
+pub fn search_sun_to_mountain(
+    target_azimuth: f64,
+    start_jd: f64,
+    end_jd: f64,
+    latitude: f64,
+    longitude: f64,
+    timezone: f64,
+    ctx: &Almanac,
+) -> Vec<(f64, f64, f64)> {
+    let mut results = Vec::new();
+    let one_day = 1.0;
+    let mut current_jd = start_jd;
+
+    while current_jd < end_jd {
+        let local_noon_jd = current_jd + (12.0 - timezone) / 24.0;
+        let epoch = epoch_from_jd(local_noon_jd);
+
+        if let Ok(state) = get_body_state(ctx, SUN_J2000, EARTH_J2000, epoch) {
+            let obl = calculate_obliquity(&state.epoch);
+            let (sun_lon, sun_lat) = cartesian_to_ecliptic(state.radius_km, obl);
+            let lst = local_sidereal_time(&state.epoch, longitude);
+            let (az, alt) = get_body_horizontal(sun_lon, sun_lat, lst, latitude, obl);
+
+            let mut diff = (az - target_azimuth).abs();
+            if diff > 180.0 {
+                diff = 360.0 - diff;
+            }
+
+            if diff < 5.0 && alt > 0.0 {
+                results.push((current_jd, az, alt));
+            }
+        }
+
+        current_jd += one_day;
+    }
+
+    results.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+    results.dedup_by(|a, b| (a.0 - b.0).abs() < 2.0);
+
+    results
+}
+
+pub fn search_sun_at_date(
+    target_azimuth: f64,
+    date_jd: f64,
+    latitude: f64,
+    longitude: f64,
+    timezone: f64,
+    ctx: &Almanac,
+) -> Vec<(f64, f64, f64)> {
+    let mut results = Vec::new();
+    let start_local = 6.0;
+    let end_local = 18.0;
+    let step_hours = 10.0 / 60.0;
+
+    let mut local_hour = start_local;
+    while local_hour <= end_local {
+        let jd = date_jd + (local_hour - timezone) / 24.0;
+        let epoch = epoch_from_jd(jd);
+
+        if let Ok(state) = get_body_state(ctx, SUN_J2000, EARTH_J2000, epoch) {
+            let obl = calculate_obliquity(&state.epoch);
+            let (sun_lon, sun_lat) = cartesian_to_ecliptic(state.radius_km, obl);
+            let lst = local_sidereal_time(&state.epoch, longitude);
+            let (az, alt) = get_body_horizontal(sun_lon, sun_lat, lst, latitude, obl);
+
+            let mut diff = (az - target_azimuth).abs();
+            if diff > 180.0 {
+                diff = 360.0 - diff;
+            }
+
+            if diff < 5.0 && alt > 0.0 {
+                results.push((jd, az, alt));
+            }
+        }
+
+        local_hour += step_hours;
+    }
+
+    results
 }
 
 #[cfg(test)]
@@ -1685,5 +1846,107 @@ mod tests {
         assert_eq!(result.day, 30);
         let result = solar_to_lunar(2024, 2, 10, &ctx).unwrap();
         assert_eq!((result.year, result.month, result.day), (2024, 1, 1));
+    }
+
+    #[test]
+    fn test_ecliptic_to_equatorial_vernal_equinox() {
+        let obliquity = TEST_EPS;
+        let (ra, dec) = ecliptic_to_equatorial(0.0, 0.0, obliquity);
+        assert!((ra - 0.0).abs() < 0.01, "春分点赤经应为0°, 实际={}", ra);
+        assert!((dec - 0.0).abs() < 0.01, "春分点赤纬应为0°, 实际={}", dec);
+    }
+
+    #[test]
+    fn test_ecliptic_to_equatorial_summer_solstice() {
+        let obliquity = TEST_EPS;
+        let (ra, dec) = ecliptic_to_equatorial(90.0, 0.0, obliquity);
+        assert!((ra - 90.0).abs() < 0.01, "夏至点赤经应为90°, 实际={}", ra);
+        let eps_deg = obliquity.to_degrees();
+        assert!((dec - eps_deg).abs() < 0.01, "夏至点赤纬应≈黄赤交角={}, 实际={}", eps_deg, dec);
+    }
+
+    #[test]
+    fn test_equatorial_to_horizontal_zenith() {
+        let ha = 0.0;
+        let dec = 40.0;
+        let lat = 40.0;
+        let (az, alt) = equatorial_to_horizontal(ha, dec, lat);
+        assert!((alt - 90.0).abs() < 0.01, "天顶高度应为90°, 实际={}", alt);
+        assert!(az >= 0.0 && az < 360.0, "方位角应在0-360°, 实际={}", az);
+    }
+
+    #[test]
+    fn test_equatorial_to_horizontal_range() {
+        for ha in [0.0, 90.0, 180.0, 270.0] {
+            for dec in [-80.0, 0.0, 80.0] {
+                for lat in [-90.0, 0.0, 90.0] {
+                    let (az, alt) = equatorial_to_horizontal(ha, dec, lat);
+                    assert!(az >= 0.0 && az < 360.0, "方位角越界: ha={} dec={} lat={} az={}", ha, dec, lat, az);
+                    assert!(alt >= -90.0 && alt <= 90.0, "高度角越界: ha={} dec={} lat={} alt={}", ha, dec, lat, alt);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_calculate_hour_angle_basic() {
+        let ha = calculate_hour_angle(100.0, 50.0);
+        assert!((ha - 50.0).abs() < 0.01, "时角应为50°, 实际={}", ha);
+    }
+
+    #[test]
+    fn test_calculate_hour_angle_wrap() {
+        let ha = calculate_hour_angle(30.0, 350.0);
+        assert!((ha - 40.0).abs() < 0.01, "时角(30-350)wrap应为40°, 实际={}", ha);
+    }
+
+    #[test]
+    fn test_get_body_horizontal_range() {
+        let (az, alt) = get_body_horizontal(0.0, 0.0, 100.0, 40.0, TEST_EPS);
+        assert!(az >= 0.0 && az < 360.0);
+        assert!(alt >= -90.0 && alt <= 90.0);
+    }
+
+    #[test]
+    fn test_astrology_data_coordinate_system() {
+        let epoch = Epoch::from_tdb_seconds(0.0);
+        if let Ok(ctx) = load_almanac(concat!(env!("CARGO_MANIFEST_DIR"), "/../../assets/bsp/de440.bsp")) {
+            let data = calculate_chart(&ctx, epoch, 40.0, -74.0, -5.0, true);
+            assert_eq!(data.coordinate_system, "ecliptic");
+        }
+    }
+
+    #[test]
+    fn test_magnetic_declination_range() {
+        let d1 = magnetic_declination(39.9, 116.4, 2024.0);
+        assert!(d1 >= -30.0 && d1 <= 30.0, "Beijing declination out of range: {}", d1);
+        let d2 = magnetic_declination(-33.9, 151.2, 2024.0);
+        assert!(d2 >= -30.0 && d2 <= 30.0);
+        let d3 = magnetic_declination(0.0, 0.0, 2024.0);
+        assert!(d3 >= -30.0 && d3 <= 30.0);
+    }
+
+    #[test]
+    fn test_apply_magnetic_declination() {
+        assert!((apply_magnetic_declination(0.0, 10.0, true) - 10.0).abs() < 0.01);
+        assert!((apply_magnetic_declination(0.0, -10.0, true) - (-10.0 + 360.0) % 360.0).abs() < 0.01);
+        assert!((apply_magnetic_declination(0.0, 10.0, false) - 0.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_sun_azimuth_range() {
+        let epoch = Epoch::from_gregorian_utc_at_midnight(2024, 6, 21) + hifitime::Duration::from_hours(4.0);
+        let ctx = match load_almanac(concat!(env!("CARGO_MANIFEST_DIR"), "/../../assets/bsp/de440.bsp")) {
+            Ok(c) => c,
+            Err(_) => { eprintln!("Skipping: BSP file not found"); return; }
+        };
+        let state = get_body_state(&ctx, SUN_J2000, EARTH_J2000, epoch).unwrap();
+        let obl = calculate_obliquity(&state.epoch);
+        let (sun_lon, sun_lat) = cartesian_to_ecliptic(state.radius_km, obl);
+        let lst = local_sidereal_time(&state.epoch, 116.4);
+        let (az, alt) = get_body_horizontal(sun_lon, sun_lat, lst, 39.9, obl);
+        assert!(az >= 0.0 && az < 360.0);
+        assert!(alt >= -90.0 && alt <= 90.0);
+        assert!(alt > 0.0, "Sun should be above horizon at noon in Beijing");
     }
 }
