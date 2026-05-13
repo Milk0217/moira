@@ -98,6 +98,13 @@ function BaziPanel({ bazi, ascendant, midheaven, partOfFortune, mingZhu, shenZhu
             </tbody>
           </table>
 
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", margin: "8px 0", fontSize: 13, color: theme.colors.text.primary }}>
+            <span><span style={{ color: theme.colors.accent.primary }}>年柱纳音: </span>{bazi.year_pillar.nayin || "—"}</span>
+            <span><span style={{ color: theme.colors.accent.primary }}>月柱纳音: </span>{bazi.month_pillar.nayin || "—"}</span>
+            <span><span style={{ color: theme.colors.accent.primary }}>日柱纳音: </span>{bazi.day_pillar.nayin || "—"}</span>
+            <span><span style={{ color: theme.colors.accent.primary }}>时柱纳音: </span>{bazi.hour_pillar.nayin || "—"}</span>
+          </div>
+
           <h4 style={{ color: theme.colors.accent.primary, fontSize: theme.fontSize.lg, marginBottom: theme.spacing.sm }}>关键点</h4>
           <table style={{ borderCollapse: "collapse", width: "100%" }}>
             <tbody>

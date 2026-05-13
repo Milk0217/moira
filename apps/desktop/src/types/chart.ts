@@ -3,7 +3,8 @@ export interface CelestialBody {
   longitude: number;
   latitude: number;
   speed: number;
-  zodiac_sign: [string, number];
+  zodiac_sign: string;
+  zodiac_degree: number;
   mansion_name: string;
   mansion_degree: number;
 }
@@ -34,6 +35,7 @@ export interface Pillar {
   earthly_branch: string;
   stem_index: number;
   branch_index: number;
+  nayin?: string;
 }
 
 export interface DayunPillar {
@@ -81,6 +83,8 @@ export interface ChartData {
   shen_sha: ShenSha[];
   ascendant: number;
   midheaven: number;
+  descendant: number;
+  imum_coeli: number;
   part_of_fortune: number;
   bazi: BaziData;
   shiganhuayao: [string, string][];

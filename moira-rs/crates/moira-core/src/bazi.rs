@@ -45,6 +45,23 @@ const LIFE_STAGES: [&str; 12] = [
     "长生", "沐浴", "冠带", "临官", "帝旺", "衰", "病", "死", "墓", "绝", "胎", "养",
 ];
 
+const NAYIN_TABLE: [&str; 30] = [
+    "海中金","炉中火","大林木","路旁土","剑锋金","山头火",
+    "涧下水","城头土","白蜡金","杨柳木","泉中水","屋上土",
+    "霹雳火","松柏木","长流水","砂石金","山下火","平地木",
+    "壁上土","金箔金","覆灯火","天河水","大驿土","钗钏金",
+    "桑柘木","大溪水","沙中土","天上火","石榴木","大海水",
+];
+
+pub fn calculate_nayin(stem_index: u8, branch_index: u8) -> String {
+    let stem = stem_index as usize;
+    let mut n = branch_index as usize;
+    while n % 10 != stem {
+        n += 12;
+    }
+    NAYIN_TABLE[n / 2].to_string()
+}
+
 /// 地支藏干: 每个地支的主气、中气、余气
 const HIDDEN_STEMS: [[(usize, &str); 3]; 12] = [
     [(0, "癸")         , (0, "")   , (0, "")   ],  // 子
@@ -67,15 +84,19 @@ pub struct Pillar {
     pub earthly_branch: String,
     pub stem_index: u8,
     pub branch_index: u8,
+    pub nayin: String,
 }
 
 impl Pillar {
     pub fn new(stem_index: usize, branch_index: usize) -> Self {
+        let stem = (stem_index % 10) as u8;
+        let branch = (branch_index % 12) as u8;
         Pillar {
-            heavenly_stem: HEAVENLY_STEMS[stem_index % 10].to_string(),
-            earthly_branch: EARTHLY_BRANCHES[branch_index % 12].to_string(),
-            stem_index: (stem_index % 10) as u8,
-            branch_index: (branch_index % 12) as u8,
+            heavenly_stem: HEAVENLY_STEMS[stem as usize].to_string(),
+            earthly_branch: EARTHLY_BRANCHES[branch as usize].to_string(),
+            stem_index: stem,
+            branch_index: branch,
+            nayin: calculate_nayin(stem, branch),
         }
     }
 }

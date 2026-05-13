@@ -78,6 +78,8 @@ pub struct AstrologyData {
     pub shen_sha: Vec<ShenSha>,
     pub ascendant: f64,
     pub midheaven: f64,
+    pub descendant: f64,
+    pub imum_coeli: f64,
     pub part_of_fortune: f64,
     pub bazi: bazi::BaziData,
     pub shiganhuayao: Vec<(String, String)>,
@@ -493,6 +495,20 @@ pub fn get_body_horizontal(
 const BRANCH_NAMES: [&str; 12] =
     ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
 
+const YEAR_BRANCH_SPIRITS: [(&str, &str, &str, &str); 12] = [
+    ("将星", "吉", "华盖", "吉"),
+    ("暗曜", "凶", "福星", "吉"),
+    ("岁前", "凶", "丧门", "凶"),
+    ("勾神", "凶", "绞神", "凶"),
+    ("孤辰", "凶", "寡宿", "凶"),
+    ("福星", "吉", "天德", "吉"),
+    ("岁殿", "吉", "游奕", "凶"),
+    ("孤辰", "凶", "寡宿", "凶"),
+    ("天喜", "吉", "红鸾", "吉"),
+    ("勾神", "凶", "绞神", "凶"),
+    ("空亡", "凶", "擎天", "凶"),
+    ("天喜", "吉", "红鸾", "吉"),
+];
 
 /// 根据出生年份的地支推算年支神煞
 pub fn calculate_shen_sha(year: i32) -> Vec<ShenSha> {
@@ -529,6 +545,10 @@ pub fn calculate_shen_sha(year: i32) -> Vec<ShenSha> {
         list.push(ShenSha { name: format!("灾煞 {}", BRANCH_NAMES[v]), category: "年支".into(), quality: "凶".into() });
     }
 
+    let (s1, q1, s2, q2) = YEAR_BRANCH_SPIRITS[branch];
+    list.push(ShenSha { name: format!("{} {}", s1, BRANCH_NAMES[branch]), category: "年支".into(), quality: q1.into() });
+    list.push(ShenSha { name: format!("{} {}", s2, BRANCH_NAMES[branch]), category: "年支".into(), quality: q2.into() });
+
     // 年干神煞
     list.push(ShenSha { name: format!("禄神 {}", stems[stem]), category: "年干".into(), quality: "吉".into() });
     // 天乙贵人 (简化: 甲戊→牛羊, 乙己→鼠猴, ...)
@@ -553,13 +573,29 @@ pub fn calculate_shensha_by_day_stem(day_stem_index: usize) -> Vec<ShenSha> {
         JIN_YU_BY_DAY[idx],
         HONG_YAN_BY_DAY[idx],
     ];
-    (0..4)
+    let mut result: Vec<ShenSha> = (0..4)
         .map(|i| ShenSha {
             name: format!("{} {}", SHEN_SHA_NAMES[i], values[i]),
             category: "日干".into(),
             quality: "吉".into(),
         })
-        .collect()
+        .collect();
+
+    let has_wenchang = matches!(idx, 0 | 2 | 6 | 7 | 8 | 9);
+    if has_wenchang {
+        result.push(ShenSha {
+            name: "文昌".into(),
+            category: "日干".into(),
+            quality: "吉".into(),
+        });
+    }
+    result.push(ShenSha {
+        name: "天赦".into(),
+        category: "日干".into(),
+        quality: "吉".into(),
+    });
+
+    result
 }
 
 const HOUR_SHENSHA: [&str; 12] = [
@@ -750,12 +786,12 @@ pub fn calculate_chart(
     let sun_lon_opt = bodies.iter().find(|b| b.name == "太阳").map(|b| b.longitude);
     let moon_lon_opt = bodies.iter().find(|b| b.name == "太阴").map(|b| b.longitude);
 
-    let (ascendant, midheaven, part_of_fortune) = match (sun_lon_opt, moon_lon_opt) {
+    let (ascendant, midheaven, part_of_fortune, descendant, imum_coeli) = match (sun_lon_opt, moon_lon_opt) {
         (Some(sun_lon), Some(moon_lon)) => {
             let angles = angles::AngleData::new(lst, latitude, obliquity_rad, sun_lon, moon_lon);
-            (angles.ascendant, angles.midheaven, angles.part_of_fortune)
+            (angles.ascendant, angles.midheaven, angles.part_of_fortune, (angles.ascendant + 180.0) % 360.0, (angles.midheaven + 180.0) % 360.0)
         }
-        _ => (0.0, 0.0, 0.0),
+        _ => (0.0, 0.0, 0.0, 0.0, 0.0),
     };
 
     let birth_utc_jd = epoch.to_jde_utc_days();
@@ -784,6 +820,8 @@ pub fn calculate_chart(
         shen_sha,
         ascendant,
         midheaven,
+        descendant,
+        imum_coeli,
         part_of_fortune,
         bazi,
         shiganhuayao,
@@ -1607,10 +1645,12 @@ mod tests {
     fn test_shensha_by_day_stem() {
         let result = calculate_shensha_by_day_stem(0);
         assert!(!result.is_empty(), "日干神煞不应为空");
-        assert_eq!(result.len(), 4);
+        assert_eq!(result.len(), 6);
         assert!(result.iter().any(|s| s.name.contains("天德")));
         assert!(result.iter().any(|s| s.name.contains("月德")));
         assert!(result.iter().any(|s| s.name.contains("红艳")));
+        assert!(result.iter().any(|s| s.name.contains("文昌")));
+        assert!(result.iter().any(|s| s.name.contains("天赦")));
         assert_eq!(result[0].category, "日干");
     }
 
@@ -1618,7 +1658,9 @@ mod tests {
     fn test_shensha_by_day_stem_all() {
         for i in 0..10 {
             let r = calculate_shensha_by_day_stem(i);
-            assert_eq!(r.len(), 4, "每个天干应有4个神煞, stem={}", i);
+            let has_wenchang = matches!(i, 0 | 2 | 6 | 7 | 8 | 9);
+            let expected = if has_wenchang { 6 } else { 5 };
+            assert_eq!(r.len(), expected, "stem={} 应有{}个神煞", i, expected);
         }
     }
 

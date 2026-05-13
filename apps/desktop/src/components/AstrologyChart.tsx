@@ -39,6 +39,10 @@ const DIR_COLORS: Record<string, string> = {
   白虎: "rgba(192,192,192,0.06)", 朱雀: "rgba(230,57,70,0.08)",
 };
 
+const PALACE_NAMES = ["命宫","财帛","兄弟","田宅","男女","奴僕","妻妾","疾厄","遷移","官祿","福德","相貌"];
+
+const ZODIAC_SIGNS = ["白羊","金牛","双子","巨蟹","狮子","室女","天秤","天蝎","人马","摩羯","宝瓶","双鱼"];
+
 const TOTAL_WIDTH = MANSIONS.reduce((s, m) => s + m.width, 0);
 
 const MANSION_START_ANGLES: number[] = [];
@@ -65,7 +69,11 @@ const ASPECT_ORB = 8; // 允许误差度
 interface BodyEntry {
   name: string;
   longitude: number;
+  latitude?: number;
+  speed?: number;
   detail?: string;
+  mansion_name?: string;
+  mansion_degree?: number;
 }
 
 interface HouseEntry {
@@ -107,7 +115,7 @@ function layoutBodies(bodies: BodyEntry[], baseR: number, cx: number, cy: number
     }
   }
 
-  const result: { name: string; symbol: string; color: string; detail?: string; x: number; y: number; dotR: number; hitR: number }[] = [];
+  const result: { name: string; symbol: string; color: string; detail?: string; speed?: number; x: number; y: number; dotR: number; hitR: number }[] = [];
 
   for (const g of groups) {
     for (let i = 0; i < g.length; i++) {
@@ -119,6 +127,7 @@ function layoutBodies(bodies: BodyEntry[], baseR: number, cx: number, cy: number
         symbol: BODY_SYMBOLS[b.name] || b.name[0],
         color: BODY_COLORS[b.name] || "#c9a0dc",
         detail: b.detail,
+        speed: b.speed,
         x: pos.x,
         y: pos.y,
         dotR: 7,
@@ -290,6 +299,25 @@ export default function AstrologyChart({
           );
         })}
 
+        {/* Zodiac sign labels (outer ring) */}
+        {ZODIAC_SIGNS.map((sign, i) => {
+          const lon = i * 30 + 15;
+          const pos = degToVec(lon, outerR * 0.98, cx, cy);
+          return (
+            <Text
+              key={`zodiac-${i}`}
+              x={pos.x - 14}
+              y={pos.y - 7}
+              text={sign}
+              fontSize={10}
+              fill="#666"
+              width={28}
+              height={14}
+              align="center"
+            />
+          );
+        })}
+
         {/* 12 dividing lines */}
         {Array.from({ length: 12 }).map((_, i) => {
           const angle = (i * 30 - 90) * (Math.PI / 180);
@@ -329,6 +357,30 @@ export default function AstrologyChart({
             />
           );
         })}
+
+        {/* 12 Palace names (inner ring) */}
+        {houses && (() => {
+          const sorted = [...houses].sort((a, b) => a.index - b.index);
+          return sorted.map((h, i) => {
+            const nextLon = i < 11 ? sorted[i + 1].longitude : sorted[0].longitude + 360;
+            const midLon = (h.longitude + nextLon) / 2;
+            const pos = degToVec(midLon, outerR * 0.65, cx, cy);
+            return (
+              <Text
+                key={`palace-${i}`}
+                x={pos.x - 20}
+                y={pos.y - 8}
+                text={PALACE_NAMES[i]}
+                fontSize={12}
+                fill="#c9a0dc"
+                fontStyle="bold"
+                width={40}
+                height={16}
+                align="center"
+              />
+            );
+          });
+        })()}
 
         {/* Planet orbit ring */}
         <Circle x={cx} y={cy} radius={planetR} stroke="#4a148c" strokeWidth={0.5} opacity={0.2} />
@@ -392,6 +444,20 @@ export default function AstrologyChart({
                 height={16}
                 align="center"
               />
+              {/* R/D marker */}
+              {body.speed !== undefined && (
+                <Text
+                  x={body.x - 6}
+                  y={body.y - 24}
+                  text={body.speed < 0 ? "逆" : "顺"}
+                  fontSize={9}
+                  fill={body.speed < 0 ? "#FF5252" : "#69F0AE"}
+                  fontStyle="bold"
+                  width={12}
+                  height={10}
+                  align="center"
+                />
+              )}
             </Group>
           );
         })}
@@ -409,6 +475,25 @@ export default function AstrologyChart({
               fill="#888"
               width={10}
               height={10}
+              align="center"
+            />
+          );
+        })}
+
+        {/* House cusp degree markers */}
+        {houses?.map((h) => {
+          const pos = degToVec(h.longitude, outerR * 0.88, cx, cy);
+          const deg = Math.floor(h.longitude);
+          return (
+            <Text
+              key={`cusp-${h.index}`}
+              x={pos.x - 12}
+              y={pos.y - 6}
+              text={`${deg}°`}
+              fontSize={10}
+              fill="#888"
+              width={24}
+              height={12}
               align="center"
             />
           );
