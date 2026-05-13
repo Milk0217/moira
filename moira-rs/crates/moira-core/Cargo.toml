@@ -1,0 +1,11 @@
+[package]
+name = "moira-core"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+anise.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+hifitime.workspace = true
+log.workspace = true

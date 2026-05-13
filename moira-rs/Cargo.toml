@@ -1,0 +1,32 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/moira-core",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+
+[workspace.dependencies]
+anise = "0.7.0"
+anyhow = "1.0.100"
+hifitime = "4.2.2"
+chrono = "0.4"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+log = "0.4.28"
+env_logger = "0.10"
+
+[package]
+name = "moira-rs"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+moira-core = { path = "crates/moira-core" }
+anise.workspace = true
+anyhow.workspace = true
+hifitime.workspace = true
+log.workspace = true
+env_logger.workspace = true
