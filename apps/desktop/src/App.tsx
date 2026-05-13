@@ -6,6 +6,7 @@ import AstrologyChart from "./components/AstrologyChart";
 import PlanetTable from "./components/PlanetTable";
 import BaziPanel from "./components/BaziPanel";
 import ErrorBoundary from "./components/ErrorBoundary";
+import ChartManager from "./components/ChartManager";
 
 function App() {
   const [chartData, setChartData] = useState<ChartData | null>(null);
@@ -26,6 +27,7 @@ function App() {
         timezone: info.timezone,
         latitude: info.latitude,
         longitude: info.longitude,
+        dstApplied: info.dst_applied,
       });
       setChartData(data);
     } catch (e) {
@@ -50,6 +52,10 @@ function App() {
         })),
       ]
     : [];
+
+  const handleLoadChart = useCallback((data: ChartData) => {
+    setChartData(data);
+  }, []);
 
   async function handleExport() {
     if (!chartData) return;
@@ -87,6 +93,7 @@ function App() {
           Moira 星盘
         </h1>
         <InputForm onCalculate={handleCalculate} loading={loading} />
+        <ChartManager onLoad={handleLoadChart} currentData={chartData} />
       </div>
 
       <div

@@ -16,10 +16,11 @@ export default function InputForm({ onCalculate, loading }: Props) {
   const [timezone, setTimezone] = useState(8);
   const [latitude, setLatitude] = useState(39.9);
   const [longitude, setLongitude] = useState(116.4);
+  const [dst, setDst] = useState(false);
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    onCalculate({ year, month, day, hour, minute, second, timezone, latitude, longitude });
+    onCalculate({ year, month, day, hour, minute, second, timezone, latitude, longitude, dst_applied: dst });
   }
 
   return (
@@ -125,6 +126,26 @@ export default function InputForm({ onCalculate, loading }: Props) {
           style={inputStyle}
         />
       </Field>
+
+      <div style={{ marginBottom: 12 }}>
+        <button
+          type="button"
+          onClick={() => setDst(!dst)}
+          style={{
+            width: "100%",
+            padding: "8px 10px",
+            background: dst ? "#3a1a5e" : "#1a1a2e",
+            color: dst ? "#c9a0dc" : "#888",
+            border: `1px solid ${dst ? "#c9a0dc" : "#333"}`,
+            borderRadius: 6,
+            fontSize: 14,
+            cursor: "pointer",
+            textAlign: "center",
+          }}
+        >
+          夏令时间: {dst ? "ON (UTC+1)" : "OFF"}
+        </button>
+      </div>
 
       <button
         type="submit"

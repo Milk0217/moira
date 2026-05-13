@@ -178,16 +178,30 @@ pub fn calculate_shishen(pillars: &[(&str, &Pillar)]) -> Vec<ShishenItem> {
     result
 }
 
-/// 计算大运 (简化: 默认顺排，起运年龄从1岁开始)
-pub fn calculate_dayun(month_pillar: &Pillar, _year: i32, _month: u8, _day: u8) -> Vec<DayunPillar> {
+pub fn calculate_dayun(
+    month_pillar: &Pillar,
+    year_stem_index: usize,
+    is_male: bool,
+    activation_age: f64,
+) -> Vec<DayunPillar> {
     let start_stem = month_pillar.stem_index as usize;
     let start_branch = month_pillar.branch_index as usize;
+    let is_yang = year_stem_index % 2 == 0;
+    let forward = (is_yang && is_male) || (!is_yang && !is_male);
+
     let mut result = Vec::new();
     for i in 0..8 {
-        let stem = (start_stem + i + 1) % 10;
-        let branch = (start_branch + i + 1) % 12;
+        let (stem, branch) = if forward {
+            ((start_stem + i + 1) % 10, (start_branch + i + 1) % 12)
+        } else {
+            (
+                (start_stem + 10 - (i + 1) % 10) % 10,
+                (start_branch + 12 - (i + 1) % 12) % 12,
+            )
+        };
+        let age = (activation_age + i as f64 * 10.0) as u8;
         result.push(DayunPillar {
-            age: (i as u8) * 10 + 1,
+            age,
             heavenly_stem: HEAVENLY_STEMS[stem].to_string(),
             earthly_branch: EARTHLY_BRANCHES[branch].to_string(),
             stem_index: stem as u8,
@@ -240,13 +254,13 @@ pub fn calculate_taiyuan(month_pillar: &Pillar) -> Pillar {
 }
 
 /// 完整八字计算
-pub fn calculate_bazi(year: i32, month: u8, day: u8, hour: u8) -> BaziData {
+pub fn calculate_bazi(year: i32, month: u8, day: u8, hour: u8, is_male: bool, activation_age: f64) -> BaziData {
     let year_pillar = calculate_year_pillar(year);
     let month_pillar = calculate_month_pillar(year, month);
     let day_pillar = calculate_day_pillar(year, month, day);
     let hour_pillar = calculate_hour_pillar(day_pillar.stem_index as usize, hour);
 
-    let dayun = calculate_dayun(&month_pillar, year, month, day);
+    let dayun = calculate_dayun(&month_pillar, year_pillar.stem_index as usize, is_male, activation_age);
 
     let pillars_info = [
         ("年柱", &year_pillar),
@@ -385,9 +399,18 @@ mod tests {
     #[test]
     fn test_dayun() {
         let month = Pillar::new(2, 2); // 丙寅
-        let dy = calculate_dayun(&month, 2024, 1, 1);
+        let dy = calculate_dayun(&month, 0, true, 1.0); // 甲年(0), 男, 阳男→顺排
         assert_eq!(dy.len(), 8);
         assert_eq!(dy[0].heavenly_stem, "丁");
+        assert_eq!(dy[0].age, 1);
+    }
+
+    #[test]
+    fn test_dayun_backward() {
+        let month = Pillar::new(2, 2); // 丙寅
+        let dy = calculate_dayun(&month, 1, true, 1.0); // 乙年(1), 男, 阴男→逆排
+        assert_eq!(dy[0].heavenly_stem, "乙");
+        assert_eq!(dy[0].earthly_branch, "丑");
         assert_eq!(dy[0].age, 1);
     }
 }

@@ -1,5 +1,6 @@
 pub mod angles;
 pub mod bazi;
+pub mod solar_terms;
 
 use anise::constants::frames::{
     EARTH_J2000, JUPITER_BARYCENTER_J2000, MARS_BARYCENTER_J2000, MERCURY_J2000, MOON_J2000,
@@ -67,7 +68,7 @@ pub struct ShenSha {
     pub quality: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct AstrologyData {
     pub timestamp: String,
     pub bodies: Vec<CelestialBodyData>,
@@ -88,6 +89,39 @@ pub struct AstrologyData {
     pub dongweifeixian_result: Vec<(u32, String, String)>,
     pub zodiac_type: String,
     pub ayanamsa: f64,
+    pub dst_applied: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CustomRules {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub aspect_orbs: Option<Vec<(f64, f64)>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub enabled_shensha: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub custom_ziqui_offset: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub custom_dayun_start_age: Option<i32>,
+}
+
+impl Default for CustomRules {
+    fn default() -> Self {
+        CustomRules {
+            aspect_orbs: None,
+            enabled_shensha: None,
+            custom_ziqui_offset: None,
+            custom_dayun_start_age: None,
+        }
+    }
+}
+
+pub fn load_custom_rules(path: &str) -> Result<CustomRules, String> {
+    let content = match std::fs::read_to_string(path) {
+        Ok(c) => c,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(CustomRules::default()),
+        Err(e) => return Err(format!("读取自定义规则文件失败: {}", e)),
+    };
+    serde_json::from_str(&content).map_err(|e| format!("解析自定义规则文件失败: {}", e))
 }
 
 pub const ASPECT_TYPES: &[(f64, &str)] = &[
@@ -525,12 +559,74 @@ pub fn load_almanac(bsp_path: &str) -> Result<Almanac, String> {
     Ok(Almanac::from_spk(spk))
 }
 
+pub fn calculate_dayun_activation_age(
+    birth_utc_jd: f64,
+    local_year: i32,
+    is_male: bool,
+    ctx: &Almanac,
+) -> f64 {
+    let year_stem_index = ((local_year - 4) % 10 + 10) as usize % 10;
+    let is_yang = year_stem_index % 2 == 0;
+    let forward = (is_yang && is_male) || (!is_yang && !is_male);
+    let jie_indices: [usize; 12] = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22];
+
+    let search_forward = |terms: &[solar_terms::SolarTerm]| -> Option<f64> {
+        for &idx in &jie_indices {
+            if let Some(term) = terms.get(idx) {
+                if term.julian_day > birth_utc_jd {
+                    return Some((term.julian_day - birth_utc_jd) / 3.0);
+                }
+            }
+        }
+        None
+    };
+
+    let search_backward = |terms: &[solar_terms::SolarTerm]| -> Option<f64> {
+        for &idx in jie_indices.iter().rev() {
+            if let Some(term) = terms.get(idx) {
+                if term.julian_day < birth_utc_jd {
+                    return Some((birth_utc_jd - term.julian_day) / 3.0);
+                }
+            }
+        }
+        None
+    };
+
+    let this_year = match solar_terms::calculate_solar_terms(local_year, ctx) {
+        Ok(t) => t,
+        Err(_) => return 0.0,
+    };
+
+    if forward {
+        if let Some(age) = search_forward(&this_year) {
+            return age;
+        }
+        if let Ok(next_year) = solar_terms::calculate_solar_terms(local_year + 1, ctx) {
+            if let Some(age) = search_forward(&next_year) {
+                return age;
+            }
+        }
+    } else {
+        if let Some(age) = search_backward(&this_year) {
+            return age;
+        }
+        if let Ok(prev_year) = solar_terms::calculate_solar_terms(local_year - 1, ctx) {
+            if let Some(age) = search_backward(&prev_year) {
+                return age;
+            }
+        }
+    }
+
+    0.0
+}
+
 pub fn calculate_chart(
     ctx: &Almanac,
     epoch: Epoch,
     latitude: f64,
     longitude: f64,
     timezone: f64,
+    is_male: bool,
 ) -> AstrologyData {
     let obliquity_rad = calculate_obliquity(&epoch);
 
@@ -609,7 +705,9 @@ pub fn calculate_chart(
         _ => (0.0, 0.0, 0.0),
     };
 
-    let bazi = bazi::calculate_bazi(year, month, day, hour);
+    let birth_utc_jd = epoch.to_jde_utc_days();
+    let activation_age = calculate_dayun_activation_age(birth_utc_jd, year, is_male, ctx);
+    let bazi = bazi::calculate_bazi(year, month, day, hour, is_male, activation_age);
     let day_stem_index = bazi.day_pillar.stem_index as usize;
     let hour_branch_index = bazi.hour_pillar.branch_index as usize;
     let shen_sha = calculate_all_shensha(year, month as u8, day_stem_index, hour_branch_index);
@@ -644,6 +742,7 @@ pub fn calculate_chart(
         dongweifeixian_result,
         zodiac_type: "回归".to_string(),
         ayanamsa: calculate_precession_offset(&epoch),
+        dst_applied: false,
     }
 }
 
@@ -746,6 +845,345 @@ pub fn calculate_dongweifeixian(asc_branch_index: usize, age: u32, life_directio
         ));
     }
     result
+}
+
+pub fn reverse_bazi_time(year: i32, month: u8, day: u8, target_day_stem_index: usize) -> Vec<(u8, String)> {
+    let day_pillar = bazi::calculate_day_pillar(year, month, day);
+    if day_pillar.stem_index as usize != target_day_stem_index {
+        return vec![];
+    }
+    const BRANCH_START_HOURS: [u8; 12] = [23, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21];
+    let mut result = Vec::with_capacity(12);
+    for branch_idx in 0..12 {
+        let start_hour = BRANCH_START_HOURS[branch_idx];
+        let stem = if branch_idx == 0 {
+            (target_day_stem_index + 1) % 10
+        } else {
+            target_day_stem_index
+        };
+        let _ = bazi::calculate_hour_pillar(stem, start_hour);
+        result.push((start_hour, bazi::EARTHLY_BRANCHES[branch_idx].to_string()));
+    }
+    result
+}
+
+/// Search for solar and lunar eclipses in the given year range.
+/// Uses geometric approach: checks sun-moon alignment and moon's ecliptic latitude.
+pub fn search_eclipses(
+    start_year: i32,
+    end_year: i32,
+    ctx: &Almanac,
+) -> Vec<(String, String, f64)> {
+    let mut results = Vec::new();
+
+    let start = Epoch::from_gregorian_utc_at_midnight(start_year, 1, 1);
+    let end = Epoch::from_gregorian_utc_at_midnight(end_year + 1, 1, 1);
+    let one_day = Duration::from_days(1.0);
+
+    let max_lon_diff = 18.0;
+    let max_moon_lat = 1.5;
+
+    let mut current = start;
+    while current < end {
+        let obliquity = calculate_obliquity(&current);
+        let sun_state = get_body_state(ctx, SUN_J2000, EARTH_J2000, current);
+        let moon_state = get_body_state(ctx, MOON_J2000, EARTH_J2000, current);
+
+        if let (Ok(sun), Ok(moon)) = (sun_state, moon_state) {
+            let (sun_lon, _) = cartesian_to_ecliptic(sun.radius_km, obliquity);
+            let (moon_lon, moon_lat) = cartesian_to_ecliptic(moon.radius_km, obliquity);
+
+            let raw_diff = (sun_lon - moon_lon + 360.0) % 360.0;
+            let new_moon_dist = raw_diff.min(360.0 - raw_diff);
+            let full_moon_dist = (raw_diff - 180.0).abs();
+
+            if new_moon_dist < max_lon_diff && moon_lat.abs() < max_moon_lat {
+                let lat_factor = 1.0 - (moon_lat.abs() / max_moon_lat).powi(2);
+                let lon_factor = 1.0 - (new_moon_dist / max_lon_diff).powi(2);
+                let magnitude = (lat_factor * 0.7 + lon_factor * 0.3) * 100.0;
+                let (y, m, d, _, _, _, _) = current.to_gregorian_utc();
+                results.push((format!("{:04}-{:02}-{:02}", y, m, d), "solar".into(), magnitude));
+            }
+
+            if full_moon_dist < max_lon_diff && moon_lat.abs() < max_moon_lat {
+                let lat_factor = 1.0 - (moon_lat.abs() / max_moon_lat).powi(2);
+                let lon_factor = 1.0 - (full_moon_dist / max_lon_diff).powi(2);
+                let magnitude = (lat_factor * 0.7 + lon_factor * 0.3) * 100.0;
+                let (y, m, d, _, _, _, _) = current.to_gregorian_utc();
+                results.push((format!("{:04}-{:02}-{:02}", y, m, d), "lunar".into(), magnitude));
+            }
+        }
+
+        current += one_day;
+    }
+
+    results.dedup_by(|a, b| a.0 == b.0 && a.1 == b.1);
+    results
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LunarDate {
+    pub year: i32,
+    pub month: u8,
+    pub day: u8,
+    pub is_leap: bool,
+    pub year_stem: String,
+    pub year_branch: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct LunarMonthInfo {
+    pub month: u8,
+    pub is_leap: bool,
+    pub first_day_jd: f64,
+    pub days: u8,
+}
+
+#[derive(Debug, Clone)]
+pub struct LunarYearInfo {
+    pub year: i32,
+    pub months: Vec<LunarMonthInfo>,
+}
+
+fn epoch_from_jd(jd: f64) -> Epoch {
+    let ref_epoch = Epoch::from_gregorian_tai_at_midnight(2000, 1, 1);
+    let ref_jd = ref_epoch.to_jde_utc_days();
+    let offset_days = jd - ref_jd;
+    let offset_seconds = offset_days * 86400.0;
+    if offset_seconds >= 0.0 {
+        ref_epoch + hifitime::Duration::from_seconds(offset_seconds)
+    } else {
+        ref_epoch - hifitime::Duration::from_seconds(-offset_seconds)
+    }
+}
+
+fn moon_sun_elongation(jd: f64, ctx: &Almanac) -> Result<f64, String> {
+    let epoch = epoch_from_jd(jd);
+    let obl = calculate_obliquity(&epoch);
+    let sun_state = get_body_state(ctx, SUN_J2000, EARTH_J2000, epoch)?;
+    let moon_state = get_body_state(ctx, MOON_J2000, EARTH_J2000, epoch)?;
+    let (sun_lon, _) = cartesian_to_ecliptic(sun_state.radius_km, obl);
+    let (moon_lon, _) = cartesian_to_ecliptic(moon_state.radius_km, obl);
+    Ok(moon_lon - sun_lon)
+}
+
+fn normalized_elongation(jd: f64, ctx: &Almanac) -> Result<f64, String> {
+    let elong = moon_sun_elongation(jd, ctx)?;
+    let norm = ((elong + 180.0) % 360.0 + 360.0) % 360.0;
+    Ok(norm - 180.0)
+}
+
+pub fn find_new_moon(approx_jd: f64, ctx: &Almanac) -> Result<f64, String> {
+    let mut low = approx_jd - 6.0;
+    let mut high = approx_jd + 6.0;
+
+    let mut g_low = normalized_elongation(low, ctx)?;
+    let mut g_high = normalized_elongation(high, ctx)?;
+
+    let mut safety = 0;
+    while g_low > 0.0 && safety < 10 {
+        low -= 3.0;
+        g_low = normalized_elongation(low, ctx)?;
+        safety += 1;
+    }
+    safety = 0;
+    while g_high < 0.0 && safety < 10 {
+        high += 3.0;
+        g_high = normalized_elongation(high, ctx)?;
+        safety += 1;
+    }
+
+    while high - low > 1.0 / 1440.0 {
+        let mid = (low + high) / 2.0;
+        let g_mid = normalized_elongation(mid, ctx)?;
+        if g_mid > 0.0 {
+            high = mid;
+        } else {
+            low = mid;
+        }
+    }
+
+    Ok((low + high) / 2.0)
+}
+
+fn find_previous_new_moon(jd: f64, ctx: &Almanac) -> Result<f64, String> {
+    let elong_raw = moon_sun_elongation(jd, ctx)?;
+    let elong_mod = ((elong_raw % 360.0) + 360.0) % 360.0;
+    let days_back = elong_mod / 12.19;
+    find_new_moon(jd - days_back, ctx)
+}
+
+fn find_next_new_moon(jd: f64, ctx: &Almanac) -> Result<f64, String> {
+    let elong_raw = moon_sun_elongation(jd, ctx)?;
+    let elong_mod = ((elong_raw % 360.0) + 360.0) % 360.0;
+    let days_ahead = (360.0 - elong_mod) / 12.19;
+    find_new_moon(jd + days_ahead, ctx)
+}
+
+fn ymd_to_jd(year: i32, month: u8, day: u8) -> f64 {
+    let a = (14 - month as i32) / 12;
+    let y = (year + 4800 - a) as i64;
+    let m = (month as i32 + 12 * a - 3) as i64;
+    let jdn = day as i64 + (153 * m + 2) / 5 + 365 * y + y / 4 - y / 100 + y / 400 - 32045;
+    jdn as f64
+}
+
+fn jd_to_ymd(jd: f64) -> (i32, u8, u8) {
+    let z = (jd + 0.5) as i64;
+    let a = ((z as f64 - 1867216.25) / 36524.25) as i64;
+    let a2 = z + 1 + a - (a / 4);
+    let b = a2 + 1524;
+    let c = ((b as f64 - 122.1) / 365.25) as i64;
+    let d = (365.25 * c as f64) as i64;
+    let e = ((b - d) as f64 / 30.6001) as i64;
+    let day = (b - d - (30.6001 * e as f64) as i64) as u8;
+    let month = if e < 14 { (e - 1) as u8 } else { (e - 13) as u8 };
+    let year = if month > 2 { c as i32 - 4716 } else { c as i32 - 4715 };
+    (year, month, day)
+}
+
+const HEAVENLY_STEMS: [&str; 10] = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"];
+const EARTHLY_BRANCHES: [&str; 12] = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
+const CST_OFFSET: f64 = 8.0 / 24.0;
+
+const ZHONGQI_NAMES: [&str; 12] = [
+    "大寒", "雨水", "春分", "谷雨", "小满", "夏至",
+    "大暑", "处暑", "秋分", "霜降", "小雪", "冬至",
+];
+const ZHONGQI_MONTHS: [u8; 12] = [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+
+pub fn calculate_lunar_year(year: i32, ctx: &Almanac) -> Result<LunarYearInfo, String> {
+    let terms_curr = solar_terms::calculate_solar_terms(year, ctx)?;
+    let terms_next = solar_terms::calculate_solar_terms(year + 1, ctx)?;
+
+    let dongzhi = terms_curr.iter().find(|t| t.name == "冬至").ok_or("冬至 not found")?;
+    let dongzhi_next = terms_next.iter().find(|t| t.name == "冬至").ok_or("冬至 next not found")?;
+
+    let shuo_11 = find_previous_new_moon(dongzhi.julian_day + 1.0, ctx)?;
+    let shuo_11_next = find_previous_new_moon(dongzhi_next.julian_day + 1.0, ctx)?;
+
+    let mut new_moons = vec![shuo_11];
+    loop {
+        let last = *new_moons.last().unwrap();
+        let next = find_next_new_moon(last + 1.0, ctx)?;
+        new_moons.push(next);
+        if next >= shuo_11_next - 0.5 {
+            break;
+        }
+    }
+
+    let mut prev_moons = vec![];
+    let mut current = shuo_11;
+    for _ in 0..12 {
+        let prev = find_previous_new_moon(current - 1.0, ctx)?;
+        prev_moons.push(prev);
+        current = prev;
+    }
+    prev_moons.reverse();
+
+    let all_shuos: Vec<f64> = prev_moons.into_iter()
+        .chain(new_moons.into_iter())
+        .collect();
+
+    let terms_prev = solar_terms::calculate_solar_terms(year - 1, ctx)?;
+    let all_terms = [terms_prev, terms_curr, terms_next].concat();
+
+    let mut months: Vec<LunarMonthInfo> = Vec::new();
+    for i in 0..all_shuos.len() - 1 {
+        let start = all_shuos[i];
+        let end = all_shuos[i + 1];
+        let start_cst_jdn = (start + CST_OFFSET + 0.5) as i64;
+        let end_cst_jdn = (end + CST_OFFSET + 0.5) as i64;
+        let days = (end_cst_jdn - start_cst_jdn) as u8;
+
+        let mut found_month: Option<u8> = None;
+        for (zq_idx, zq_name) in ZHONGQI_NAMES.iter().enumerate() {
+            for term in &all_terms {
+                if term.name == *zq_name && term.julian_day >= start && term.julian_day < end {
+                    found_month = Some(ZHONGQI_MONTHS[zq_idx]);
+                    break;
+                }
+            }
+            if found_month.is_some() {
+                break;
+            }
+        }
+
+        months.push(LunarMonthInfo {
+            month: found_month.unwrap_or(0),
+            is_leap: found_month.is_none(),
+            first_day_jd: start,
+            days,
+        });
+    }
+
+    let mut prev_month = 0u8;
+    for m in &mut months {
+        if m.is_leap {
+            m.month = prev_month;
+        } else {
+            prev_month = m.month;
+        }
+    }
+
+    if let Some(first_m1) = months.iter().position(|m| m.month == 1 && !m.is_leap) {
+        months = months[first_m1..].to_vec();
+    }
+
+    Ok(LunarYearInfo { year, months })
+}
+
+pub fn solar_to_lunar(year: i32, month: u8, day: u8, ctx: &Almanac) -> Result<LunarDate, String> {
+    let jd = ymd_to_jd(year, month, day);
+    let jdn_cst = (jd + CST_OFFSET + 0.5) as i64;
+
+    let terms_curr = solar_terms::calculate_solar_terms(year, ctx)?;
+    let yushui = terms_curr.iter().find(|t| t.name == "雨水").ok_or("雨水 not found")?;
+    let month1_start = find_previous_new_moon(yushui.julian_day + 1.0, ctx)?;
+    let m1_jdn_cst = (month1_start + CST_OFFSET + 0.5) as i64;
+
+    let lunar_year = if jdn_cst < m1_jdn_cst { year - 1 } else { year };
+
+    let ly = calculate_lunar_year(lunar_year, ctx)?;
+
+    for lm in &ly.months {
+        let start_jdn_cst = (lm.first_day_jd + CST_OFFSET + 0.5) as i64;
+        let end_jdn_cst = start_jdn_cst + lm.days as i64;
+        if jdn_cst >= start_jdn_cst && jdn_cst < end_jdn_cst {
+            let day_in_month = (jdn_cst - start_jdn_cst + 1) as u8;
+            let stem_idx = ((ly.year - 4) % 10 + 10) as usize % 10;
+            let branch_idx = ((ly.year - 4) % 12 + 12) as usize % 12;
+            return Ok(LunarDate {
+                year: ly.year,
+                month: lm.month,
+                day: day_in_month,
+                is_leap: lm.is_leap,
+                year_stem: HEAVENLY_STEMS[stem_idx].to_string(),
+                year_branch: EARTHLY_BRANCHES[branch_idx].to_string(),
+            });
+        }
+    }
+
+    Err("Date not found in lunar calendar".into())
+}
+
+pub fn lunar_to_solar(
+    lunar_year: i32,
+    lunar_month: u8,
+    lunar_day: u8,
+    is_leap: bool,
+    ctx: &Almanac,
+) -> Result<(i32, u8, u8), String> {
+    let ly = calculate_lunar_year(lunar_year, ctx)?;
+
+    for lm in &ly.months {
+        if lm.month == lunar_month && lm.is_leap == is_leap {
+            let jd = lm.first_day_jd + (lunar_day as f64) - 1.0;
+            return Ok(jd_to_ymd(jd + CST_OFFSET));
+        }
+    }
+
+    Err("Lunar month not found in calendar".into())
 }
 
 #[cfg(test)]
@@ -1064,5 +1502,188 @@ mod tests {
         assert_eq!(result[0].2, "子");
         assert_eq!(result[1].2, "亥");
         assert_eq!(result[2].2, "戌");
+    }
+
+    #[test]
+    fn test_custom_rules_empty() {
+        let rules = CustomRules::default();
+        assert!(rules.aspect_orbs.is_none());
+        assert!(rules.enabled_shensha.is_none());
+        assert!(rules.custom_ziqui_offset.is_none());
+        assert!(rules.custom_dayun_start_age.is_none());
+
+        let json = r#"{}"#;
+        let rules: CustomRules = serde_json::from_str(json).unwrap();
+        assert!(rules.aspect_orbs.is_none());
+        assert!(rules.enabled_shensha.is_none());
+        assert!(rules.custom_ziqui_offset.is_none());
+        assert!(rules.custom_dayun_start_age.is_none());
+
+        let json = r#"{"custom_ziqui_offset": 180.0}"#;
+        let rules: CustomRules = serde_json::from_str(json).unwrap();
+        assert!(rules.aspect_orbs.is_none());
+        assert!(rules.enabled_shensha.is_none());
+        assert_eq!(rules.custom_ziqui_offset, Some(180.0));
+        assert!(rules.custom_dayun_start_age.is_none());
+    }
+
+    #[test]
+    fn test_custom_rules_override() {
+        let json = r#"{"custom_ziqui_offset": 180.0}"#;
+        let rules: CustomRules = serde_json::from_str(json).unwrap();
+        assert_eq!(rules.custom_ziqui_offset, Some(180.0));
+    }
+
+    #[test]
+    fn test_load_custom_rules_nonexistent() {
+        let rules = load_custom_rules("/tmp/nonexistent_custom_rules_file.json").unwrap();
+        assert!(rules.aspect_orbs.is_none());
+        assert!(rules.enabled_shensha.is_none());
+        assert!(rules.custom_ziqui_offset.is_none());
+        assert!(rules.custom_dayun_start_age.is_none());
+    }
+
+    #[test]
+    fn test_reverse_bazi() {
+        let result = reverse_bazi_time(2000, 1, 1, 4);
+        assert_eq!(result.len(), 12);
+        assert!(result.contains(&(23, "子".to_string())));
+        assert!(result.contains(&(1, "丑".to_string())));
+        assert!(result.contains(&(3, "寅".to_string())));
+        assert!(result.contains(&(5, "卯".to_string())));
+        assert!(result.contains(&(7, "辰".to_string())));
+        assert!(result.contains(&(9, "巳".to_string())));
+        assert!(result.contains(&(11, "午".to_string())));
+        assert!(result.contains(&(13, "未".to_string())));
+        assert!(result.contains(&(15, "申".to_string())));
+        assert!(result.contains(&(17, "酉".to_string())));
+        assert!(result.contains(&(19, "戌".to_string())));
+        assert!(result.contains(&(21, "亥".to_string())));
+    }
+
+    #[test]
+    fn test_reverse_bazi_no_match() {
+        let result = reverse_bazi_time(2000, 1, 1, 5);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_reverse_bazi_late_zi() {
+        let result = reverse_bazi_time(2000, 1, 1, 4);
+        assert!(result.contains(&(23, "子".to_string())));
+        let late_zi = bazi::calculate_hour_pillar(5, 23);
+        assert_eq!(late_zi.heavenly_stem, "甲");
+        assert_eq!(late_zi.earthly_branch, "子");
+    }
+
+    #[test]
+    fn test_eclipse_search() {
+        let bsp_path = concat!(env!("CARGO_MANIFEST_DIR"), "/../../assets/bsp/de440.bsp");
+        if !std::path::Path::new(bsp_path).exists() {
+            eprintln!("Skipping: BSP file not found at {}", bsp_path);
+            return;
+        }
+        let ctx = load_almanac(bsp_path).unwrap();
+        let results = search_eclipses(2024, 2024, &ctx);
+        assert!(!results.is_empty(), "Should find at least 1 eclipse in 2024");
+        assert!(results.iter().any(|(_, t, _)| t == "solar"), "Should find a solar eclipse");
+    }
+
+    fn get_lunar_test_almanac() -> Option<Almanac> {
+        let paths = [
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../../assets/bsp/de440.bsp"),
+            "assets/bsp/de440.bsp",
+            "../assets/bsp/de440.bsp",
+        ];
+        for path in &paths {
+            if std::path::Path::new(path).exists() {
+                if let Ok(ctx) = load_almanac(path) {
+                    return Some(ctx);
+                }
+            }
+        }
+        None
+    }
+
+    #[test]
+    fn test_new_moon_2024_jan() {
+        let ctx = match get_lunar_test_almanac() {
+            Some(c) => c,
+            None => { eprintln!("Skipping: BSP file not found"); return; }
+        };
+        let result = find_new_moon(ymd_to_jd(2024, 1, 10), &ctx).unwrap();
+        let (y, m, d) = jd_to_ymd(result);
+        assert_eq!((y, m, d), (2024, 1, 11));
+    }
+
+    #[test]
+    fn test_solar_to_lunar_spring_festival() {
+        let ctx = match get_lunar_test_almanac() {
+            Some(c) => c,
+            None => { eprintln!("Skipping: BSP file not found"); return; }
+        };
+        let result = solar_to_lunar(2024, 2, 10, &ctx).unwrap();
+        assert_eq!((result.year, result.month, result.day, result.is_leap), (2024, 1, 1, false));
+    }
+
+    #[test]
+    fn test_solar_to_lunar_known() {
+        let ctx = match get_lunar_test_almanac() {
+            Some(c) => c,
+            None => { eprintln!("Skipping: BSP file not found"); return; }
+        };
+        let result = solar_to_lunar(2024, 12, 25, &ctx).unwrap();
+        assert_eq!((result.year, result.month, result.day), (2024, 11, 25));
+    }
+
+    #[test]
+    fn test_lunar_roundtrip() {
+        let ctx = match get_lunar_test_almanac() {
+            Some(c) => c,
+            None => { eprintln!("Skipping: BSP file not found"); return; }
+        };
+        let test_dates = [(2024, 2u8, 10u8), (2024, 6u8, 15u8), (2024, 12u8, 25u8)];
+        for &(y, m, d) in &test_dates {
+            let lunar = solar_to_lunar(y, m, d, &ctx).unwrap();
+            let (y2, m2, d2) = lunar_to_solar(lunar.year, lunar.month, lunar.day, lunar.is_leap, &ctx).unwrap();
+            assert_eq!((y, m, d), (y2, m2, d2), "Roundtrip failed for {}/{}/{}", y, m, d);
+        }
+    }
+
+    #[test]
+    fn test_lunar_to_solar_known() {
+        let ctx = match get_lunar_test_almanac() {
+            Some(c) => c,
+            None => { eprintln!("Skipping: BSP file not found"); return; }
+        };
+        let (y, m, d) = lunar_to_solar(2024, 1, 1, false, &ctx).unwrap();
+        assert_eq!((y, m, d), (2024, 2, 10));
+    }
+
+    #[test]
+    fn test_lunar_year_2024_structure() {
+        let ctx = match get_lunar_test_almanac() {
+            Some(c) => c,
+            None => { eprintln!("Skipping: BSP file not found"); return; }
+        };
+        let ly = calculate_lunar_year(2024, &ctx).unwrap();
+        assert!(!ly.months.is_empty());
+        assert_eq!(ly.months[0].month, 1);
+        assert!(!ly.months[0].is_leap);
+        let has_month_12 = ly.months.iter().any(|m| m.month == 12 && !m.is_leap);
+        assert!(has_month_12, "Lunar year should have month 12");
+    }
+
+    #[test]
+    fn test_solar_to_lunar_new_year_eve() {
+        let ctx = match get_lunar_test_almanac() {
+            Some(c) => c,
+            None => { eprintln!("Skipping: BSP file not found"); return; }
+        };
+        let result = solar_to_lunar(2024, 2, 9, &ctx).unwrap();
+        assert_eq!(result.year, 2023);
+        assert_eq!(result.day, 30);
+        let result = solar_to_lunar(2024, 2, 10, &ctx).unwrap();
+        assert_eq!((result.year, result.month, result.day), (2024, 1, 1));
     }
 }

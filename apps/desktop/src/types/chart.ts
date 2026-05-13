@@ -92,6 +92,7 @@ export interface ChartData {
   dongweifeixian_result: [number, string, string][];
   zodiac_type: string;
   ayanamsa: number;
+  dst_applied: boolean;
 }
 
 export interface BirthInfo {
@@ -104,6 +105,7 @@ export interface BirthInfo {
   timezone: number;
   latitude: number;
   longitude: number;
+  dst_applied: boolean;
 }
 
 export interface HouseData {
