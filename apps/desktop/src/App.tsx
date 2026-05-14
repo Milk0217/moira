@@ -163,7 +163,7 @@ function App() {
                 <div style={{ color: theme.colors.semantic.error, padding: 40 }}>星盘渲染失败</div>
               }
             >
-              <AstrologyChart bodies={chartBodies} houses={chartData?.houses} size={500} centerText={centerText} />
+              <AstrologyChart bodies={chartBodies} houses={chartData?.houses} size={560} centerText={centerText} />
             </ErrorBoundary>
             <div style={{ display: "flex", gap: theme.spacing.sm }}>
               <button onClick={handleExport} style={btnStyle}>
