@@ -39,6 +39,18 @@ const DIR_COLORS: Record<string, string> = {
   白虎: "rgba(192,192,192,0.06)", 朱雀: "rgba(230,57,70,0.08)",
 };
 
+export function getLunarMansion(lon: number): { name: string; degree: number } {
+  const total = MANSIONS.reduce((s, m) => s + m.width, 0);
+  const pos = ((lon % 360 + 360) % 360 / 360) * total;
+  let accum = 0;
+  for (const m of MANSIONS) {
+    accum += m.width;
+    if (pos < accum) return { name: m.name, degree: pos - (accum - m.width) };
+  }
+  const last = MANSIONS[MANSIONS.length - 1];
+  return { name: last.name, degree: last.width };
+}
+
 const PALACE_NAMES = ["命宫","财帛","兄弟","田宅","男女","奴僕","妻妾","疾厄","遷移","官祿","福德","相貌"];
 
 const ZODIAC_SIGNS = ["白羊","金牛","双子","巨蟹","狮子","室女","天秤","天蝎","人马","摩羯","宝瓶","双鱼"];
@@ -500,15 +512,15 @@ export default function AstrologyChart({
         })}
 
         {/* Center circle + text */}
-        <Circle x={cx} y={cy} radius={40} stroke="#4a148c" strokeWidth={1} fill="#0f0f23" />
+        <Circle x={cx} y={cy} radius={50} stroke="#4a148c" strokeWidth={1} fill="#0f0f23" />
         <Text
-          x={cx - 30}
+          x={cx - 45}
           y={cy - 10}
-          text={centerText}
-          fontSize={18}
+          text={centerText || "命盘"}
+          fontSize={15}
           fill="#6a1b9a"
           fontStyle="bold"
-          width={60}
+          width={90}
           height={20}
           align="center"
         />

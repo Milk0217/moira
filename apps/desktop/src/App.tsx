@@ -3,7 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { ChartData, BirthInfo } from "./types/chart";
 import InputForm from "./components/InputForm";
 import ElectionalForm from "./components/ElectionalForm";
-import AstrologyChart from "./components/AstrologyChart";
+import AstrologyChart, { getLunarMansion } from "./components/AstrologyChart";
 import PlanetTable from "./components/PlanetTable";
 import BaziPanel from "./components/BaziPanel";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -55,6 +55,10 @@ function App() {
         })),
       ]
     : [];
+
+  const centerText = chartData
+    ? `命在${getLunarMansion(chartData.ascendant).name}宿${getLunarMansion(chartData.ascendant).degree.toFixed(1)}°`
+    : undefined;
 
   const handleLoadChart = useCallback((data: ChartData) => {
     setChartData(data);
@@ -159,7 +163,7 @@ function App() {
                 <div style={{ color: theme.colors.semantic.error, padding: 40 }}>星盘渲染失败</div>
               }
             >
-              <AstrologyChart bodies={chartBodies} houses={chartData.houses} size={500} />
+              <AstrologyChart bodies={chartBodies} houses={chartData?.houses} size={500} centerText={centerText} />
             </ErrorBoundary>
             <div style={{ display: "flex", gap: theme.spacing.sm }}>
               <button onClick={handleExport} style={btnStyle}>
