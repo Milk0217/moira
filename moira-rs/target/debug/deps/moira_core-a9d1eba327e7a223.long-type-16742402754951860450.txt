@@ -1,0 +1,1 @@
+std::iter::Chain<std::slice::Iter<'_, CelestialBodyData>, std::slice::Iter<'_, ExtraBodyData>>

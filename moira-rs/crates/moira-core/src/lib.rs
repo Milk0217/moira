@@ -1,5 +1,6 @@
 pub mod angles;
 pub mod bazi;
+pub mod rule_engine;
 pub mod solar_terms;
 
 use anise::constants::frames::{
@@ -93,6 +94,8 @@ pub struct AstrologyData {
     pub ayanamsa: f64,
     pub dst_applied: bool,
     pub coordinate_system: String,
+    pub star_powers: Option<Vec<rule_engine::StarPower>>,
+    pub house_analyses: Option<Vec<rule_engine::HouseAnalysis>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -811,6 +814,42 @@ pub fn calculate_chart(
     let yuexian_result = calculate_yuexian(xiaoxian_result.1, month);
     let dongweifeixian_result = calculate_dongweifeixian(asc_branch, 0, "阳男阴女");
 
+    // Star power computation
+    let mut body_infos: Vec<rule_engine::BodyInfo> = Vec::new();
+    for b in &bodies {
+        let sign_index = ((b.longitude / 30.0) as usize) % 12;
+        body_infos.push(rule_engine::BodyInfo {
+            body_id: rule_engine::BodyId::from_name(&b.name).unwrap_or(rule_engine::BodyId::太阳),
+            longitude: b.longitude,
+            mansion_name: b.mansion_name.clone(),
+            sign_zodiac: format!("{}", sign_index),
+        });
+    }
+    for b in &extra_bodies {
+        let sign_index = ((b.longitude / 30.0) as usize) % 12;
+        body_infos.push(rule_engine::BodyInfo {
+            body_id: rule_engine::BodyId::from_name(&b.name).unwrap_or(rule_engine::BodyId::计都),
+            longitude: b.longitude,
+            mansion_name: b.mansion_name.clone(),
+            sign_zodiac: format!("{}", sign_index),
+        });
+    }
+    let ming_du_zhu = rule_engine::BodyId::from_name(&ming_zhu).unwrap_or(rule_engine::BodyId::木星);
+    let ming_gong_zhu = rule_engine::BodyId::from_name(&shen_zhu).unwrap_or(rule_engine::BodyId::火星);
+    let star_powers: Vec<rule_engine::StarPower> = body_infos.iter().map(|bi| {
+        let sign_idx: usize = bi.sign_zodiac.parse().unwrap_or(0);
+        rule_engine::compute_star_power(
+            bi.body_id, bi.longitude, &bi.mansion_name, sign_idx, month,
+            &body_infos, ming_du_zhu, ming_gong_zhu,
+        )
+    }).collect();
+    let house_analyses: Vec<rule_engine::HouseAnalysis> = houses.iter().enumerate().map(|(i, h)| {
+        rule_engine::analyze_house(
+            i, h.longitude, &body_infos, year,
+            day_stem_index, ming_du_zhu, ming_gong_zhu,
+        )
+    }).collect();
+
     AstrologyData {
         timestamp: epoch.to_string(),
         bodies,
@@ -835,6 +874,8 @@ pub fn calculate_chart(
         ayanamsa: calculate_precession_offset(&epoch),
         dst_applied: false,
         coordinate_system: "ecliptic".to_string(),
+        star_powers: Some(star_powers),
+        house_analyses: Some(house_analyses),
     }
 }
 
