@@ -1,6 +1,6 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { ChartData, BirthInfo, ElectionalInfo } from "./types/chart";
+import { ChartData, BirthInfo, ElectionalInfo, MansionInfo } from "./types/chart";
 import InputForm from "./components/InputForm";
 import ElectionalForm from "./components/ElectionalForm";
 import AstrologyChart, { getLunarMansion } from "./components/AstrologyChart";
@@ -15,6 +15,11 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [birthInfo, setBirthInfo] = useState<BirthInfo | null>(null);
   const [mode, setMode] = useState<"natal" | "electional">("natal");
+  const [mansions, setMansions] = useState<MansionInfo[] | null>(null);
+
+  useEffect(() => {
+    invoke<MansionInfo[]>("get_mansion_info").then(setMansions).catch(() => {});
+  }, []);
 
 const handleCalculate = useCallback(async (info: BirthInfo | ElectionalInfo) => {
      setLoading(true);
@@ -32,6 +37,7 @@ const handleCalculate = useCallback(async (info: BirthInfo | ElectionalInfo) => 
          longitude: info.longitude,
          dstApplied: info.dst_applied,
          isMale: (info as BirthInfo).isMale ?? true,
+         useSidereal: info.use_sidereal ?? false,
        });
       setChartData(data);
     } catch (e) {
@@ -58,7 +64,7 @@ const chartBodies = chartData
      : [];
 
 const centerText = chartData
-     ? `命在${getLunarMansion(chartData.ascendant).name}宿${getLunarMansion(chartData.ascendant).degree.toFixed(1)}°`
+     ? `命在${getLunarMansion(chartData.ascendant, mansions ?? undefined).name}宿${getLunarMansion(chartData.ascendant, mansions ?? undefined).degree.toFixed(1)}°`
      : undefined;
 
    const handleLoadChart = useCallback((data: ChartData) => {
@@ -164,7 +170,11 @@ const centerText = chartData
                 <div style={{ color: theme.colors.semantic.error, padding: 40 }}>星盘渲染失败</div>
               }
             >
-              <AstrologyChart bodies={chartBodies} houses={chartData?.houses} size={560} centerText={centerText} />
+              <AstrologyChart bodies={chartBodies} houses={chartData?.houses} size={560} centerText={centerText}
+  dongweifeixian={chartData?.dongweifeixian_result}
+  starPowers={chartData?.star_powers}
+  houseAnalyses={chartData?.house_analyses}
+  mansions={mansions ?? undefined} />
             </ErrorBoundary>
             <div style={{ display: "flex", gap: theme.spacing.sm }}>
               <button onClick={handleExport} style={btnStyle}>
@@ -174,10 +184,22 @@ const centerText = chartData
             <div style={{ display: "flex", gap: theme.spacing.sm, alignItems: "center" }}>
               <span style={{ color: theme.colors.text.secondary, fontSize: theme.fontSize.md }}>星制:</span>
               <button
-                onClick={() => {}}
+                onClick={() => {
+                  if (!birthInfo) return;
+                  handleCalculate({ ...birthInfo, use_sidereal: false });
+                }}
                 style={zodiacBtnStyle(chartData.zodiac_type === "回归")}
               >
                 回归制 {chartData.zodiac_type === "回归" ? "✓" : ""}
+              </button>
+              <button
+                onClick={() => {
+                  if (!birthInfo) return;
+                  handleCalculate({ ...birthInfo, use_sidereal: true });
+                }}
+                style={zodiacBtnStyle(chartData.zodiac_type === "恒星")}
+              >
+                恒星制 {chartData.zodiac_type === "恒星" ? "✓" : ""}
               </button>
               <span style={{ color: theme.colors.text.tertiary, fontSize: theme.fontSize.xs }}>
                 岁差: {chartData.ayanamsa.toFixed(2)}°

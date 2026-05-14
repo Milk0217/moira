@@ -1,6 +1,6 @@
 use anise::prelude::Epoch;
 use hifitime::TimeScale;
-use moira_core::{calculate_chart, load_almanac, AstrologyData};
+use moira_core::{calculate_chart, get_mansion_data, load_almanac, AstrologyData, MansionInfo};
 use tauri::State;
 
 struct AppState {
@@ -21,6 +21,7 @@ fn calculate(
     longitude: f64,
     dst_applied: bool,
     is_male: Option<bool>,
+    use_sidereal: Option<bool>,
 ) -> Result<AstrologyData, String> {
     let tz_hours = (timezone * 3600.0) as i64;
     let dst_offset = if dst_applied { 3600 } else { 0 };
@@ -40,7 +41,8 @@ fn calculate(
     let utc_epoch = epoch - Duration::from_seconds((tz_hours + dst_offset) as f64);
 
     let is_male = is_male.unwrap_or(true);
-    let mut data = calculate_chart(&state.almanac, utc_epoch, latitude, longitude, timezone, is_male);
+    let use_sidereal = use_sidereal.unwrap_or(false);
+    let mut data = calculate_chart(&state.almanac, utc_epoch, latitude, longitude, timezone, is_male, use_sidereal);
     data.dst_applied = dst_applied;
     Ok(data)
 }
@@ -83,6 +85,11 @@ fn load_chart(app_handle: tauri::AppHandle, name: String) -> Result<AstrologyDat
 }
 
 #[tauri::command]
+fn get_mansion_info() -> Vec<MansionInfo> {
+    get_mansion_data()
+}
+
+#[tauri::command]
 fn delete_chart(app_handle: tauri::AppHandle, name: String) -> Result<(), String> {
     use tauri::Manager;
     let path = app_handle.path().app_data_dir().map_err(|e| e.to_string())?;
@@ -97,7 +104,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .manage(AppState { almanac })
-        .invoke_handler(tauri::generate_handler![calculate, save_chart, list_charts, load_chart, delete_chart])
+        .invoke_handler(tauri::generate_handler![calculate, save_chart, list_charts, load_chart, delete_chart, get_mansion_info])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

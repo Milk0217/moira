@@ -18,11 +18,12 @@ export default function InputForm({ onCalculate, loading }: Props) {
   const [timezone, setTimezone] = useState(8);
   const [latitude, setLatitude] = useState(39.9);
   const [longitude, setLongitude] = useState(116.4);
+  const [isMale, setIsMale] = useState(true);
   const [dst, setDst] = useState(false);
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    onCalculate({ year, month, day, hour, minute, second, timezone, latitude, longitude, dst_applied: dst });
+    onCalculate({ year, month, day, hour, minute, second, timezone, latitude, longitude, dst_applied: dst, isMale });
   }
 
   return (
@@ -130,6 +131,24 @@ export default function InputForm({ onCalculate, loading }: Props) {
       </Field>
 
       <div style={{ marginBottom: theme.spacing.md }}>
+        <button
+          type="button"
+          onClick={() => setIsMale(!isMale)}
+          style={{
+            width: "100%",
+            padding: "8px 10px",
+            background: isMale ? theme.colors.accent.dark : "transparent",
+            color: isMale ? theme.colors.accent.primary : theme.colors.text.secondary,
+            border: `1px solid ${isMale ? theme.colors.accent.primary : theme.colors.border.default}`,
+            borderRadius: theme.radius.md,
+            fontSize: theme.fontSize.lg,
+            cursor: "pointer",
+            textAlign: "center",
+            marginBottom: theme.spacing.sm,
+          }}
+        >
+          性别: {isMale ? "♂ 男" : "♀ 女"}
+        </button>
         <button
           type="button"
           onClick={() => setDst(!dst)}

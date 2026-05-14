@@ -11,13 +11,13 @@ fn main() {
     let ctx = load_almanac("assets/bsp/de440.bsp").expect("加载星历失败");
     let time = "2020-10-15T12:34:56.789Z";
     let epoch = Epoch::from_str(time).unwrap();
-    let data = calculate_chart(&ctx, epoch, 39.9042, 116.4074, 8.0, true); // 北京 东八区, 男
+    let data = calculate_chart(&ctx, epoch, 39.9042, 116.4074, 8.0, true, false); // 北京 东八区, 男, 回归制
 
     info!("[七政]");
     for b in &data.bodies {
         info!(
             "  {}: 黄经 {:.2}° 黄纬 {:.2}° {} {:.2}°",
-            b.name, b.longitude, b.latitude, b.zodiac_sign.0, b.zodiac_sign.1
+            b.name, b.longitude, b.latitude, b.zodiac_sign, b.zodiac_degree
         );
     }
 

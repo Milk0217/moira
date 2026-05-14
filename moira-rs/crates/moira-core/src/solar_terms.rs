@@ -102,21 +102,7 @@ pub fn calculate_solar_terms(year: i32, ctx: &Almanac) -> Result<Vec<SolarTerm>,
 }
 
 fn jd_to_gregorian(jd: f64) -> (i32, u8, u8, u8, u8) {
-    let z = (jd + 0.5) as i64;
-    let a = ((z as f64 - 1867216.25) / 36524.25) as i64;
-    let a2 = z + 1 + a - (a / 4);
-    let b = a2 + 1524;
-    let c = ((b as f64 - 122.1) / 365.25) as i64;
-    let d = (365.25 * c as f64) as i64;
-    let e = ((b - d) as f64 / 30.6001) as i64;
-    let day = (b - d - (30.6001 * e as f64) as i64) as u8;
-    let month = if e < 14 { (e - 1) as u8 } else { (e - 13) as u8 };
-    let year = if month > 2 { c as i32 - 4716 } else { c as i32 - 4715 };
-    let frac = jd - (jd.floor());
-    let total_minutes = (frac * 24.0 * 60.0) as u32;
-    let hour = (total_minutes / 60) as u8;
-    let minute = (total_minutes % 60) as u8;
-    (year, month, day, hour, minute)
+    crate::utils::jd_to_gregorian(jd)
 }
 
 #[cfg(test)]

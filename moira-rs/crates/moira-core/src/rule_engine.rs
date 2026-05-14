@@ -132,7 +132,7 @@ pub const HOUSE_NAMES: [&str; 12] = [
 pub const SEASONAL_STARS: [[BodyId; 2]; 4] = [
     [BodyId::木星, BodyId::紫炁], // 春
     [BodyId::火星, BodyId::罗睺], // 夏
-    [BodyId::金星, BodyId::金星], // 秋
+    [BodyId::金星, BodyId::土星], // 秋
     [BodyId::水星, BodyId::月孛], // 冬
 ];
 
