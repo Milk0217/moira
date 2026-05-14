@@ -90,6 +90,9 @@ export interface ChartData {
   shiganhuayao: [string, string][];
   ming_zhu: string;
   shen_zhu: string;
+  ming_du_zhu: string;
+  ming_gong_zhu: string;
+  shen_gong_zhu: string;
   xijige: [string, string][];
   xiaoxian_result: [string, number];
   yuexian_result: [string, number];

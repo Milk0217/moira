@@ -192,6 +192,9 @@ function App() {
               partOfFortune={chartData.part_of_fortune}
               mingZhu={chartData.ming_zhu}
               shenZhu={chartData.shen_zhu}
+              mingDuZhu={chartData.ming_du_zhu}
+              mingGongZhu={chartData.ming_gong_zhu}
+              shenGongZhu={chartData.shen_gong_zhu}
               shiganhuayao={chartData.shiganhuayao}
               xijige={chartData.xijige}
               xiaoxianResult={chartData.xiaoxian_result}

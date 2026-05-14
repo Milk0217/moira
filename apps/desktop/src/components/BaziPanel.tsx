@@ -10,6 +10,9 @@ interface Props {
   partOfFortune: number;
   mingZhu: string;
   shenZhu: string;
+  mingDuZhu: string;
+  mingGongZhu: string;
+  shenGongZhu: string;
   shiganhuayao: [string, string][];
   xijige: [string, string][];
   xiaoxianResult: [string, number];
@@ -17,7 +20,7 @@ interface Props {
   dongweifeixianResult: [number, string, string][];
 }
 
-function BaziPanel({ bazi, ascendant, midheaven, partOfFortune, mingZhu, shenZhu, shiganhuayao, xijige, xiaoxianResult, yuexianResult, dongweifeixianResult }: Props) {
+function BaziPanel({ bazi, ascendant, midheaven, partOfFortune, mingZhu, shenZhu, mingDuZhu, mingGongZhu, shenGongZhu, shiganhuayao, xijige, xiaoxianResult, yuexianResult, dongweifeixianResult }: Props) {
   const [tab, setTab] = useState<"bazi" | "dayun" | "shishen" | "life" | "wuxing" | "liuxian">("bazi");
 
   const section = (title: string, content: string) => (
@@ -112,8 +115,11 @@ function BaziPanel({ bazi, ascendant, midheaven, partOfFortune, mingZhu, shenZhu
               {section("天顶 (MC)", `${midheaven.toFixed(2)}°`)}
               {section("福点", `${partOfFortune.toFixed(2)}°`)}
               {section("胎元", pillarStr(bazi.taiyuan))}
-              {section("命主", mingZhu)}
-              {section("身主", shenZhu)}
+              {section("命主(宫)", mingZhu)}
+              {section("命度主", mingDuZhu)}
+              {section("命宫主", mingGongZhu)}
+              {section("身主(宫)", shenZhu)}
+              {section("身宫主", shenGongZhu)}
             </tbody>
           </table>
         </div>

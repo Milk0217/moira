@@ -86,6 +86,9 @@ pub struct AstrologyData {
     pub shiganhuayao: Vec<(String, String)>,
     pub ming_zhu: String,
     pub shen_zhu: String,
+    pub ming_du_zhu: String,
+    pub ming_gong_zhu: String,
+    pub shen_gong_zhu: String,
     pub xijige: Vec<(String, String)>,
     pub xiaoxian_result: (String, usize),
     pub yuexian_result: (String, usize),
@@ -145,7 +148,19 @@ pub const ZODIAC_SIGNS: [&str; 12] = [
     "天秤", "天蝎", "射手", "摩羯", "水瓶", "双鱼",
 ];
 
-/// 二十八宿数据: (名称, 四象, 宽度(度))
+/// 二十八宿度主星 (木金土日月火水 循环4次)
+pub const MANSION_DEGREE_MASTERS: [&str; 28] = [
+    "木星","金星","土星","太阳","太阴","火星","水星",
+    "木星","金星","土星","太阳","太阴","火星","水星",
+    "木星","金星","土星","太阳","太阴","火星","水星",
+    "木星","金星","土星","太阳","太阴","火星","水星",
+];
+
+/// 十二宫(黄道12宫)宫主星
+pub const SIGN_HOUSE_MASTERS: [&str; 12] = [
+    // 子丑寅卯辰巳午未申酉戌亥 — 对应西式12宫
+    "土星","土星","木星","金星","金星","水星","太阳","太阴","水星","金星","火星","木星",
+];
 pub const LUNAR_MANSIONS: [(&str, &str, f64); 28] = [
     ("角", "青龙", 12.0),
     ("亢", "青龙", 9.0),
@@ -807,7 +822,8 @@ pub fn calculate_chart(
     let shiganhuayao = calculate_shiganhuayao(bazi.day_pillar.stem_index as usize);
     let asc_branch = ((ascendant / 30.0) as usize) % 12;
     let hour_branch = bazi.hour_pillar.branch_index as usize;
-    let (ming_zhu, shen_zhu) = calculate_liming_anshen(asc_branch, hour_branch);
+    let (asc_mansion_name, _, _, _) = get_lunar_mansion(ascendant);
+    let (ming_gong_zhu, ming_du_zhu, shen_gong_zhu) = calculate_liming_anshen(asc_branch, hour_branch, asc_mansion_name);
     let xijige = calculate_xijige(bazi.day_pillar.stem_index as usize, &bodies, &extra_bodies);
 
     let xiaoxian_result = calculate_xiaoxian(asc_branch, 0);
@@ -834,19 +850,19 @@ pub fn calculate_chart(
             sign_zodiac: format!("{}", sign_index),
         });
     }
-    let ming_du_zhu = rule_engine::BodyId::from_name(&ming_zhu).unwrap_or(rule_engine::BodyId::木星);
-    let ming_gong_zhu = rule_engine::BodyId::from_name(&shen_zhu).unwrap_or(rule_engine::BodyId::火星);
+    let body_ming_du = rule_engine::BodyId::from_name(&ming_du_zhu).unwrap_or(rule_engine::BodyId::木星);
+    let body_ming_gong = rule_engine::BodyId::from_name(&ming_gong_zhu).unwrap_or(rule_engine::BodyId::火星);
     let star_powers: Vec<rule_engine::StarPower> = body_infos.iter().map(|bi| {
         let sign_idx: usize = bi.sign_zodiac.parse().unwrap_or(0);
         rule_engine::compute_star_power(
             bi.body_id, bi.longitude, &bi.mansion_name, sign_idx, month,
-            &body_infos, ming_du_zhu, ming_gong_zhu,
+            &body_infos, body_ming_du, body_ming_gong,
         )
     }).collect();
     let house_analyses: Vec<rule_engine::HouseAnalysis> = houses.iter().enumerate().map(|(i, h)| {
         rule_engine::analyze_house(
             i, h.longitude, &body_infos, year,
-            day_stem_index, ming_du_zhu, ming_gong_zhu,
+            day_stem_index, body_ming_du, body_ming_gong,
         )
     }).collect();
 
@@ -864,8 +880,11 @@ pub fn calculate_chart(
         part_of_fortune,
         bazi,
         shiganhuayao,
-        ming_zhu,
-        shen_zhu,
+        ming_zhu: ming_gong_zhu.clone(),
+        shen_zhu: shen_gong_zhu.clone(),
+        ming_du_zhu,
+        ming_gong_zhu,
+        shen_gong_zhu,
         xijige,
         xiaoxian_result,
         yuexian_result,
@@ -887,14 +906,29 @@ pub fn calculate_shiganhuayao(_day_stem_index: usize) -> Vec<(String, String)> {
         .collect()
 }
 
-pub fn calculate_liming_anshen(asc_branch_index: usize, hour_branch_index: usize) -> (String, String) {
-    const MING_ZHU: [&str; 12] = [
-        "贪狼", "巨门", "禄存", "文曲", "廉贞", "武曲",
-        "破军", "武曲", "廉贞", "文曲", "禄存", "巨门",
-    ];
-    let ming_zhu = MING_ZHU[asc_branch_index % 12];
-    let shen_zhu = MING_ZHU[(hour_branch_index + 6) % 12];
-    (ming_zhu.to_string(), shen_zhu.to_string())
+pub fn get_ming_du_zhu(mansion_name: &str) -> String {
+    for (i, &(name, _, _)) in LUNAR_MANSIONS.iter().enumerate() {
+        if name == mansion_name {
+            return MANSION_DEGREE_MASTERS[i].to_string();
+        }
+    }
+    "木星".to_string()
+}
+
+pub fn get_sign_master(sign_index: usize) -> String {
+    SIGN_HOUSE_MASTERS[sign_index % 12].to_string()
+}
+
+/// 安身立命: 计算命宫主、命度主、身宫主及命身歧
+pub fn calculate_liming_anshen(
+    asc_branch_index: usize,
+    hour_branch_index: usize,
+    asc_mansion_name: &str,
+) -> (String, String, String) {
+    let ming_gong_zhu = SIGN_HOUSE_MASTERS[asc_branch_index % 12].to_string();
+    let ming_du_zhu = get_ming_du_zhu(asc_mansion_name);
+    let shen_gong_zhu = SIGN_HOUSE_MASTERS[hour_branch_index % 12].to_string();
+    (ming_gong_zhu, ming_du_zhu, shen_gong_zhu)
 }
 
 pub fn calculate_xijige(
@@ -1625,9 +1659,10 @@ mod tests {
 
     #[test]
     fn test_liming_anshen() {
-        let (ming, shen) = calculate_liming_anshen(0, 0);
-        assert_eq!(ming, "贪狼");
-        assert_eq!(shen, "破军");
+        let (ming_gong, ming_du, shen_gong) = calculate_liming_anshen(0, 0, "角");
+        assert_eq!(ming_gong, "土星");
+        assert_eq!(ming_du, "木星");
+        assert_eq!(shen_gong, "土星");
     }
 
     #[test]
