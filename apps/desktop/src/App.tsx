@@ -1,6 +1,6 @@
-import { useState, useCallback } from "react";
+import { useCallback, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { ChartData, BirthInfo } from "./types/chart";
+import { ChartData, BirthInfo, ElectionalInfo } from "./types/chart";
 import InputForm from "./components/InputForm";
 import ElectionalForm from "./components/ElectionalForm";
 import AstrologyChart, { getLunarMansion } from "./components/AstrologyChart";
@@ -16,22 +16,23 @@ function App() {
   const [birthInfo, setBirthInfo] = useState<BirthInfo | null>(null);
   const [mode, setMode] = useState<"natal" | "electional">("natal");
 
-  const handleCalculate = useCallback(async (info: BirthInfo) => {
-    setLoading(true);
-    setBirthInfo(info);
-    try {
-      const data = await invoke<ChartData>("calculate", {
-        year: info.year,
-        month: info.month,
-        day: info.day,
-        hour: info.hour,
-        minute: info.minute,
-        second: info.second,
-        timezone: info.timezone,
-        latitude: info.latitude,
-        longitude: info.longitude,
-        dstApplied: info.dst_applied,
-      });
+const handleCalculate = useCallback(async (info: BirthInfo | ElectionalInfo) => {
+     setLoading(true);
+     setBirthInfo(info);
+     try {
+       const data = await invoke<ChartData>("calculate", {
+         year: info.year,
+         month: info.month,
+         day: info.day,
+         hour: info.hour,
+         minute: info.minute,
+         second: info.second,
+         timezone: info.timezone,
+         latitude: info.latitude,
+         longitude: info.longitude,
+         dstApplied: info.dst_applied,
+         isMale: (info as BirthInfo).isMale ?? true,
+       });
       setChartData(data);
     } catch (e) {
       console.error("计算失败:", e);
@@ -41,40 +42,40 @@ function App() {
     }
   }, []);
 
-  const chartBodies = chartData
-    ? [
-        ...chartData.bodies.map((b) => ({
-          name: b.name,
-          longitude: b.longitude,
-          detail: `${b.name}\n黄经 ${b.longitude.toFixed(1)}° 黄纬 ${b.latitude.toFixed(1)}°\n${b.mansion_name}宿 ${b.mansion_degree.toFixed(1)}°`,
-        })),
-        ...chartData.extra_bodies.map((e) => ({
-          name: e.name,
-          longitude: e.longitude,
-          detail: `${e.name}\n黄经 ${e.longitude.toFixed(1)}°\n${e.mansion_name}宿 ${e.mansion_degree.toFixed(1)}°`,
-        })),
-      ]
-    : [];
+const chartBodies = chartData
+     ? [
+         ...chartData.bodies.map((b) => ({
+           name: b.name,
+           longitude: b.longitude,
+           detail: `${b.name}\n${b.zodiac_sign}${b.zodiac_degree.toFixed(1)}°\n黄经 ${b.longitude.toFixed(1)}° 黄纬 ${b.latitude.toFixed(1)}°\n${b.mansion_name}宿 ${b.mansion_degree.toFixed(1)}°`,
+         })),
+         ...chartData.extra_bodies.map((e) => ({
+           name: e.name,
+           longitude: e.longitude,
+           detail: `${e.name}\n黄经 ${e.longitude.toFixed(1)}°\n${e.mansion_name}宿 ${e.mansion_degree.toFixed(1)}°`,
+         })),
+       ]
+     : [];
 
-  const centerText = chartData
-    ? `命在${getLunarMansion(chartData.ascendant).name}宿${getLunarMansion(chartData.ascendant).degree.toFixed(1)}°`
-    : undefined;
+const centerText = chartData
+     ? `命在${getLunarMansion(chartData.ascendant).name}宿${getLunarMansion(chartData.ascendant).degree.toFixed(1)}°`
+     : undefined;
 
-  const handleLoadChart = useCallback((data: ChartData) => {
-    setChartData(data);
-  }, []);
+   const handleLoadChart = useCallback((data: ChartData) => {
+     setChartData(data);
+   }, []);
 
-  async function handleExport() {
-    if (!chartData) return;
-    const stage = document.querySelector("canvas")?.parentElement;
-    if (!stage) return;
-    const uri = stage.querySelector("canvas")?.toDataURL("image/png");
-    if (!uri) return;
-    const a = document.createElement("a");
-    a.href = uri;
-    a.download = `moira-${birthInfo?.year ?? "chart"}.png`;
-    a.click();
-  }
+   async function handleExport() {
+     if (!chartData) return;
+     const canvas = document.querySelector("canvas");
+     if (!canvas) return;
+     const uri = canvas.toDataURL("image/png");
+     if (!uri) return;
+     const a = document.createElement("a");
+     a.href = uri;
+     a.download = `moira-${birthInfo?.year ?? "chart"}.png`;
+     a.click();
+   }
 
   const modeBtnStyle = (isActive: boolean): React.CSSProperties => ({
     flex: 1, padding: "6px 0", fontSize: theme.fontSize.sm, borderRadius: theme.radius.sm, cursor: "pointer",

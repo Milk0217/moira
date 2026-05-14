@@ -16,14 +16,16 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CelestialBodyData {
-    pub name: String,
-    pub longitude: f64,
-    pub latitude: f64,
-    pub speed: f64,
-    pub zodiac_sign: (String, f64),
-    pub mansion_name: String,
-    pub mansion_degree: f64,
-}
+     pub name: String,
+     pub longitude: f64,
+     pub latitude: f64,
+     pub speed: f64,
+     pub zodiac_sign: String,
+     pub zodiac_degree: f64,
+     pub mansion_name: String,
+     pub mansion_degree: f64,
+     pub coordinate_system: String,
+ }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ExtraBodyData {
@@ -228,15 +230,17 @@ pub fn celestial_body_from_state(state: &CartesianState, body_name: &str, obliqu
     let degree_in_sign = (ecliptic_longitude % 30.0).abs();
     let (m_name, _, m_deg, _) = get_lunar_mansion(ecliptic_longitude);
 
-    CelestialBodyData {
-        name: body_name.to_string(),
-        longitude: ecliptic_longitude,
-        latitude: ecliptic_latitude,
-        speed,
-        zodiac_sign: (ZODIAC_SIGNS[sign_index].to_string(), degree_in_sign),
-        mansion_name: m_name.to_string(),
-        mansion_degree: m_deg,
-    }
+CelestialBodyData {
+         name: body_name.to_string(),
+         longitude: ecliptic_longitude,
+         latitude: ecliptic_latitude,
+         speed,
+         zodiac_sign: ZODIAC_SIGNS[sign_index].to_string(),
+         zodiac_degree: degree_in_sign,
+         mansion_name: m_name.to_string(),
+         mansion_degree: m_deg,
+         coordinate_system: "ecliptic".to_string(),
+     }
 }
 
 fn cartesian_to_ecliptic(pos: Vector3, obliquity_rad: f64) -> (f64, f64) {
@@ -290,31 +294,34 @@ pub fn calculate_body_with_zodiac_type(
     obliquity_rad: f64,
     use_sidereal: bool,
 ) -> CelestialBodyData {
-    let mut body = calculate_celestial_body(ctx, target_frame, observer_frame, epoch, body_name, obliquity_rad)
-        .unwrap_or_else(|_| CelestialBodyData {
-            name: body_name.to_string(),
-            longitude: 0.0,
-            latitude: 0.0,
-            speed: 0.0,
-            zodiac_sign: ("白羊".to_string(), 0.0),
-            mansion_name: "角".to_string(),
-            mansion_degree: 0.0,
-        });
-    if use_sidereal {
-        let ayanamsa = calculate_precession_offset(&epoch);
-        let mut lon = body.longitude - ayanamsa;
-        if lon < 0.0 {
-            lon += 360.0;
-        }
-        body.longitude = lon;
-        let sign_index = ((lon / 30.0) as usize) % 12;
-        let degree_in_sign = (lon % 30.0).abs();
-        body.zodiac_sign = (ZODIAC_SIGNS[sign_index].to_string(), degree_in_sign);
-        let (m_name, _, m_deg, _) = get_lunar_mansion(lon);
-        body.mansion_name = m_name.to_string();
-        body.mansion_degree = m_deg;
-    }
-    body
+let mut body = calculate_celestial_body(ctx, target_frame, observer_frame, epoch, body_name, obliquity_rad)
+         .unwrap_or_else(|_| CelestialBodyData {
+             name: body_name.to_string(),
+             longitude: 0.0,
+             latitude: 0.0,
+             speed: 0.0,
+             zodiac_sign: "白羊".to_string(),
+             zodiac_degree: 0.0,
+             mansion_name: "角".to_string(),
+             mansion_degree: 0.0,
+             coordinate_system: "ecliptic".to_string(),
+         });
+     if use_sidereal {
+         let ayanamsa = calculate_precession_offset(&epoch);
+         let mut lon = body.longitude - ayanamsa;
+         if lon < 0.0 {
+             lon += 360.0;
+         }
+         body.longitude = lon;
+         let sign_index = ((lon / 30.0) as usize) % 12;
+         let degree_in_sign = (lon % 30.0).abs();
+         body.zodiac_sign = ZODIAC_SIGNS[sign_index].to_string();
+         body.zodiac_degree = degree_in_sign;
+         let (m_name, _, m_deg, _) = get_lunar_mansion(lon);
+         body.mansion_name = m_name.to_string();
+         body.mansion_degree = m_deg;
+     }
+     body
 }
 
 fn extra_body(name: &str, longitude: f64) -> ExtraBodyData {
@@ -1539,12 +1546,12 @@ mod tests {
     fn test_aspects_basic() {
         let b1 = CelestialBodyData {
             name: "太阳".into(), longitude: 0.0, latitude: 0.0, speed: 1.0,
-            zodiac_sign: ("白羊".into(), 0.0),
+            zodiac_sign: "白羊".to_string(), zodiac_degree: 0.0, coordinate_system: "ecliptic".to_string(),
             mansion_name: "角".into(), mansion_degree: 0.0,
         };
         let b2 = CelestialBodyData {
-            name: "太阴".into(), longitude: 180.0, latitude: 0.0, speed: 13.0,
-            zodiac_sign: ("天秤".into(), 0.0),
+name: "太阴".into(), longitude: 180.0, latitude: 0.0, speed: 13.0,
+             zodiac_sign: "天秤".to_string(), zodiac_degree: 0.0, coordinate_system: "ecliptic".to_string(),
             mansion_name: "角".into(), mansion_degree: 0.0,
         };
         let aspects = calculate_aspects(&[b1, b2], &[]);
@@ -1668,13 +1675,13 @@ mod tests {
     #[test]
     fn test_xijige() {
         let bodies = vec![
-            CelestialBodyData { name: "太阳".into(), longitude: 0.0, latitude: 0.0, speed: 1.0, zodiac_sign: ("白羊".into(), 0.0), mansion_name: "角".into(), mansion_degree: 0.0 },
-            CelestialBodyData { name: "太阴".into(), longitude: 180.0, latitude: 0.0, speed: 13.0, zodiac_sign: ("天秤".into(), 0.0), mansion_name: "角".into(), mansion_degree: 0.0 },
-            CelestialBodyData { name: "水星".into(), longitude: 0.0, latitude: 0.0, speed: 1.0, zodiac_sign: ("白羊".into(), 0.0), mansion_name: "角".into(), mansion_degree: 0.0 },
-            CelestialBodyData { name: "金星".into(), longitude: 0.0, latitude: 0.0, speed: 1.0, zodiac_sign: ("白羊".into(), 0.0), mansion_name: "角".into(), mansion_degree: 0.0 },
-            CelestialBodyData { name: "火星".into(), longitude: 0.0, latitude: 0.0, speed: 1.0, zodiac_sign: ("白羊".into(), 0.0), mansion_name: "角".into(), mansion_degree: 0.0 },
-            CelestialBodyData { name: "木星".into(), longitude: 0.0, latitude: 0.0, speed: 1.0, zodiac_sign: ("白羊".into(), 0.0), mansion_name: "角".into(), mansion_degree: 0.0 },
-            CelestialBodyData { name: "土星".into(), longitude: 0.0, latitude: 0.0, speed: 1.0, zodiac_sign: ("白羊".into(), 0.0), mansion_name: "角".into(), mansion_degree: 0.0 },
+            CelestialBodyData { name: "太阳".into(), longitude: 0.0, latitude: 0.0, speed: 1.0, zodiac_sign: "白羊".to_string(), zodiac_degree: 0.0, coordinate_system: "ecliptic".to_string(), mansion_name: "角".into(), mansion_degree: 0.0 },
+            CelestialBodyData { name: "太阴".into(), longitude: 180.0, latitude: 0.0, speed: 13.0, zodiac_sign: "天秤".to_string(), zodiac_degree: 0.0, coordinate_system: "ecliptic".to_string(), mansion_name: "角".into(), mansion_degree: 0.0 },
+            CelestialBodyData { name: "水星".into(), longitude: 0.0, latitude: 0.0, speed: 1.0, zodiac_sign: "白羊".to_string(), zodiac_degree: 0.0, coordinate_system: "ecliptic".to_string(), mansion_name: "角".into(), mansion_degree: 0.0 },
+            CelestialBodyData { name: "金星".into(), longitude: 0.0, latitude: 0.0, speed: 1.0, zodiac_sign: "白羊".to_string(), zodiac_degree: 0.0, coordinate_system: "ecliptic".to_string(), mansion_name: "角".into(), mansion_degree: 0.0 },
+            CelestialBodyData { name: "火星".into(), longitude: 0.0, latitude: 0.0, speed: 1.0, zodiac_sign: "白羊".to_string(), zodiac_degree: 0.0, coordinate_system: "ecliptic".to_string(), mansion_name: "角".into(), mansion_degree: 0.0 },
+            CelestialBodyData { name: "木星".into(), longitude: 0.0, latitude: 0.0, speed: 1.0, zodiac_sign: "白羊".to_string(), zodiac_degree: 0.0, coordinate_system: "ecliptic".to_string(), mansion_name: "角".into(), mansion_degree: 0.0 },
+            CelestialBodyData { name: "土星".into(), longitude: 0.0, latitude: 0.0, speed: 1.0, zodiac_sign: "白羊".to_string(), zodiac_degree: 0.0, coordinate_system: "ecliptic".to_string(), mansion_name: "角".into(), mansion_degree: 0.0 },
         ];
         let extras = vec![
             ExtraBodyData { name: "天王星".into(), longitude: 0.0, mansion_name: "角".into(), mansion_degree: 0.0 },

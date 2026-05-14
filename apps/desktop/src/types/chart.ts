@@ -1,13 +1,14 @@
 export interface CelestialBody {
-  name: string;
-  longitude: number;
-  latitude: number;
-  speed: number;
-  zodiac_sign: string;
-  zodiac_degree: number;
-  mansion_name: string;
-  mansion_degree: number;
-}
+   name: string;
+   longitude: number;
+   latitude: number;
+   speed: number;
+   zodiac_sign: string;
+   zodiac_degree: number;
+   mansion_name: string;
+   mansion_degree: number;
+   coordinate_system: string;
+ }
 
 export interface ExtraBody {
   name: string;
