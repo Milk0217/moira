@@ -1,7 +1,15 @@
 pub mod angles;
 pub mod bazi;
+pub mod eclipse;
+pub mod lunar;
 pub mod rule_engine;
+pub mod shensha;
 pub mod solar_terms;
+pub mod utils;
+
+pub use eclipse::{search_eclipses, magnetic_declination, apply_magnetic_declination, search_sun_to_mountain, search_sun_at_date};
+pub use lunar::{LunarDate, LunarMonthInfo, LunarYearInfo, find_new_moon, calculate_lunar_year, solar_to_lunar, lunar_to_solar, ymd_to_jd, jd_to_ymd};
+pub use shensha::{ShenSha, calculate_all_shensha, calculate_year_shensha, calculate_day_stem_shensha, calculate_hour_shensha};
 
 use anise::constants::frames::{
     EARTH_J2000, JUPITER_BARYCENTER_J2000, MARS_BARYCENTER_J2000, MERCURY_J2000, MOON_J2000,
@@ -62,13 +70,6 @@ impl HouseData {
             mansion_degree: m_deg,
         }
     }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct ShenSha {
-    pub name: String,
-    pub category: String,
-    pub quality: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -163,6 +164,24 @@ pub const SIGN_HOUSE_MASTERS: [&str; 12] = [
     // 子丑寅卯辰巳午未申酉戌亥 — 对应西式12宫
     "土星","土星","木星","金星","金星","水星","太阳","太阴","水星","金星","火星","木星",
 ];
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MansionInfo {
+    pub name: String,
+    pub direction: String,
+    pub width: f64,
+}
+
+pub fn get_mansion_data() -> Vec<MansionInfo> {
+    LUNAR_MANSIONS
+        .iter()
+        .map(|(name, dir, width)| MansionInfo {
+            name: name.to_string(),
+            direction: dir.to_string(),
+            width: *width,
+        })
+        .collect()
+}
+
 pub const LUNAR_MANSIONS: [(&str, &str, f64); 28] = [
     ("角", "青龙", 12.0),
     ("亢", "青龙", 9.0),
@@ -243,7 +262,7 @@ CelestialBodyData {
      }
 }
 
-fn cartesian_to_ecliptic(pos: Vector3, obliquity_rad: f64) -> (f64, f64) {
+pub fn cartesian_to_ecliptic(pos: Vector3, obliquity_rad: f64) -> (f64, f64) {
     let distance = pos.norm();
     if distance < 1e-10 {
         return (0.0, 0.0);
@@ -517,142 +536,6 @@ pub fn get_body_horizontal(
     equatorial_to_horizontal(ha, dec, latitude)
 }
 
-const BRANCH_NAMES: [&str; 12] =
-    ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
-
-const YEAR_BRANCH_SPIRITS: [(&str, &str, &str, &str); 12] = [
-    ("将星", "吉", "华盖", "吉"),
-    ("暗曜", "凶", "福星", "吉"),
-    ("岁前", "凶", "丧门", "凶"),
-    ("勾神", "凶", "绞神", "凶"),
-    ("孤辰", "凶", "寡宿", "凶"),
-    ("福星", "吉", "天德", "吉"),
-    ("岁殿", "吉", "游奕", "凶"),
-    ("孤辰", "凶", "寡宿", "凶"),
-    ("天喜", "吉", "红鸾", "吉"),
-    ("勾神", "凶", "绞神", "凶"),
-    ("空亡", "凶", "擎天", "凶"),
-    ("天喜", "吉", "红鸾", "吉"),
-];
-
-/// 根据出生年份的地支推算年支神煞
-pub fn calculate_shen_sha(year: i32) -> Vec<ShenSha> {
-    let branch = ((year - 1984) % 12 + 12) as usize % 12;
-    let stems = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"];
-    let stem = ((year - 1984) % 10 + 10) as usize % 10;
-
-    let mut list = vec![
-        ShenSha { name: format!("太岁 {}", BRANCH_NAMES[branch]), category: "年支".into(), quality: "凶".into() },
-        ShenSha { name: format!("岁破 {}", BRANCH_NAMES[(branch + 6) % 12]), category: "年支".into(), quality: "凶".into() },
-    ];
-
-    let lookup = |table: &[[usize; 4]]| -> Option<usize> {
-        for &g in table {
-            if g[..3].contains(&branch) { return Some(g[3]); }
-        }
-        None
-    };
-
-    // 驿马
-    if let Some(v) = lookup(&[[2, 6, 10, 8], [3, 9, 1, 11], [8, 0, 4, 2], [11, 3, 7, 5]]) {
-        list.push(ShenSha { name: format!("驿马 {}", BRANCH_NAMES[v]), category: "年支".into(), quality: "吉".into() });
-    }
-    // 桃花
-    if let Some(v) = lookup(&[[2, 6, 10, 3], [3, 9, 1, 6], [8, 0, 4, 9], [11, 3, 7, 0]]) {
-        list.push(ShenSha { name: format!("桃花 {}", BRANCH_NAMES[v]), category: "年支".into(), quality: "吉".into() });
-    }
-    // 劫煞 (申子辰→巳, 寅午戌→亥, 巳酉丑→寅, 亥卯未→申)
-    if let Some(v) = lookup(&[[8, 0, 4, 5], [2, 6, 10, 11], [3, 9, 1, 2], [11, 3, 7, 8]]) {
-        list.push(ShenSha { name: format!("劫煞 {}", BRANCH_NAMES[v]), category: "年支".into(), quality: "凶".into() });
-    }
-    // 灾煞 (申子辰→午, 寅午戌→子, 巳酉丑→卯, 亥卯未→酉)
-    if let Some(v) = lookup(&[[8, 0, 4, 6], [2, 6, 10, 0], [3, 9, 1, 3], [11, 3, 7, 9]]) {
-        list.push(ShenSha { name: format!("灾煞 {}", BRANCH_NAMES[v]), category: "年支".into(), quality: "凶".into() });
-    }
-
-    let (s1, q1, s2, q2) = YEAR_BRANCH_SPIRITS[branch];
-    list.push(ShenSha { name: format!("{} {}", s1, BRANCH_NAMES[branch]), category: "年支".into(), quality: q1.into() });
-    list.push(ShenSha { name: format!("{} {}", s2, BRANCH_NAMES[branch]), category: "年支".into(), quality: q2.into() });
-
-    // 年干神煞
-    list.push(ShenSha { name: format!("禄神 {}", stems[stem]), category: "年干".into(), quality: "吉".into() });
-    // 天乙贵人 (简化: 甲戊→牛羊, 乙己→鼠猴, ...)
-    let tian_yi = match stem { 0 | 4 => "丑未", 1 | 5 => "子申", 2 | 6 => "酉亥", 3 | 7 => "卯巳", 8 | 9 => "午寅", _ => "" };
-    list.push(ShenSha { name: format!("天乙贵人 {}", tian_yi), category: "年干".into(), quality: "吉".into() });
-
-    list
-}
-
-const TIAN_DE_BY_DAY: [&str; 10] = ["寅", "酉", "巳", "子", "申", "申", "寅", "巳", "巳", "巳"];
-const YUE_DE_BY_DAY: [&str; 10] = ["丙", "申", "壬", "甲", "午", "壬", "丙", "甲", "巳", "壬"];
-const JIN_YU_BY_DAY: [&str; 10] = ["辰", "巳", "未", "申", "丑", "寅", "卯", "亥", "午", "未"];
-const HONG_YAN_BY_DAY: [&str; 10] = ["午", "申", "寅", "亥", "未", "辰", "戌", "酉", "子", "巳"];
-
-const SHEN_SHA_NAMES: [&str; 4] = ["天德", "月德", "金舆", "红艳"];
-
-pub fn calculate_shensha_by_day_stem(day_stem_index: usize) -> Vec<ShenSha> {
-    let idx = day_stem_index % 10;
-    let values = [
-        TIAN_DE_BY_DAY[idx],
-        YUE_DE_BY_DAY[idx],
-        JIN_YU_BY_DAY[idx],
-        HONG_YAN_BY_DAY[idx],
-    ];
-    let mut result: Vec<ShenSha> = (0..4)
-        .map(|i| ShenSha {
-            name: format!("{} {}", SHEN_SHA_NAMES[i], values[i]),
-            category: "日干".into(),
-            quality: "吉".into(),
-        })
-        .collect();
-
-    let has_wenchang = matches!(idx, 0 | 2 | 6 | 7 | 8 | 9);
-    if has_wenchang {
-        result.push(ShenSha {
-            name: "文昌".into(),
-            category: "日干".into(),
-            quality: "吉".into(),
-        });
-    }
-    result.push(ShenSha {
-        name: "天赦".into(),
-        category: "日干".into(),
-        quality: "吉".into(),
-    });
-
-    result
-}
-
-const HOUR_SHENSHA: [&str; 12] = [
-    "青龙", "明堂", "天刑", "朱雀", "金匮", "天德",
-    "青龙", "明堂", "天刑", "朱雀", "金匮", "天德",
-];
-
-pub fn calculate_shensha_by_hour_branch(hour_branch_index: usize) -> Vec<ShenSha> {
-    vec![ShenSha {
-        name: format!("{}", HOUR_SHENSHA[hour_branch_index % 12]),
-        category: "时辰".into(),
-        quality: "吉".into(),
-    }]
-}
-
-pub fn calculate_all_shensha(year: i32, month: u8, day_stem_index: usize, hour_branch_index: usize) -> Vec<ShenSha> {
-    let _ = month;
-    let mut result = calculate_shen_sha(year);
-    result.extend(calculate_shensha_by_day_stem(day_stem_index));
-    result.extend(calculate_shensha_by_hour_branch(hour_branch_index));
-    let mut seen_names = Vec::new();
-    result.retain(|s| {
-        if seen_names.contains(&s.name) {
-            false
-        } else {
-            seen_names.push(s.name.clone());
-            true
-        }
-    });
-    result
-}
-
 /// 计算 Ascendant（上升点），Equal House 系统
 pub fn calculate_houses(epoch: &Epoch, latitude: f64, longitude: f64, obliquity_rad: f64) -> Vec<HouseData> {
     let lst = local_sidereal_time(epoch, longitude);
@@ -734,49 +617,19 @@ pub fn calculate_dayun_activation_age(
     0.0
 }
 
-pub fn calculate_chart(
-    ctx: &Almanac,
-    epoch: Epoch,
-    latitude: f64,
-    longitude: f64,
-    timezone: f64,
-    is_male: bool,
-) -> AstrologyData {
-    let obliquity_rad = calculate_obliquity(&epoch);
-
-    // 本地时间拆分为年月日时（用于八字、福点等）
-    let jd = epoch.to_jde_utc_days();
-    // 本地时间的儒略日 ≈ UTC JDN + timezone / 24
-    let local_jd = jd + timezone as f64 / 24.0;
-    // 简化为公历日期
-    let z = (local_jd + 0.5) as i64;
-    let a = ((z as f64 - 1867216.25) / 36524.25) as i64;
-    let a2 = z + 1 + a - (a / 4);
-    let b = a2 + 1524;
-    let c = ((b as f64 - 122.1) / 365.25) as i64;
-    let d = (365.25 * c as f64) as i64;
-    let e = ((b - d) as f64 / 30.6001) as i64;
-    let day = (b - d - (30.6001 * e as f64) as i64) as u8;
-    let month = if e < 14 { (e - 1) as u8 } else { (e - 13) as u8 };
-    let year = if month > 2 { c as i32 } else { (c - 1) as i32 };
-    // 本地时间的小时
-    let hour = ((local_jd - (local_jd.floor())) * 24.0) as u8;
+/// 计算星体位置、四馀、宫位和基本角度
+fn compute_planetary_data(
+    ctx: &Almanac, epoch: Epoch, latitude: f64, longitude: f64, obliquity_rad: f64,
+) -> (Vec<CelestialBodyData>, Vec<ExtraBodyData>, Vec<HouseData>, f64, f64, f64, f64, f64, f64, f64) {
     let body_frames: [(Frame, &str); 10] = [
-        (SUN_J2000, "太阳"),
-        (MOON_J2000, "太阴"),
-        (MERCURY_J2000, "水星"),
-        (VENUS_J2000, "金星"),
-        (MARS_BARYCENTER_J2000, "火星"),
-        (JUPITER_BARYCENTER_J2000, "木星"),
-        (SATURN_BARYCENTER_J2000, "土星"),
-        (URANUS_BARYCENTER_J2000, "天王星"),
-        (NEPTUNE_BARYCENTER_J2000, "海王星"),
-        (PLUTO_BARYCENTER_J2000, "冥王星"),
+        (SUN_J2000, "太阳"), (MOON_J2000, "太阴"), (MERCURY_J2000, "水星"),
+        (VENUS_J2000, "金星"), (MARS_BARYCENTER_J2000, "火星"), (JUPITER_BARYCENTER_J2000, "木星"),
+        (SATURN_BARYCENTER_J2000, "土星"), (URANUS_BARYCENTER_J2000, "天王星"),
+        (NEPTUNE_BARYCENTER_J2000, "海王星"), (PLUTO_BARYCENTER_J2000, "冥王星"),
     ];
 
     let mut bodies = Vec::new();
     let mut moon_state: Option<CartesianState> = None;
-
     for &(frame, name) in &body_frames {
         match calculate_celestial_body(ctx, frame, EARTH_J2000, epoch, name, obliquity_rad) {
             Ok(b) => {
@@ -794,8 +647,7 @@ pub fn calculate_chart(
     let sun_lon = bodies.iter().find(|b| b.name == "太阳").map(|b| b.longitude);
     let jup_lon = bodies.iter().find(|b| b.name == "木星").map(|b| b.longitude);
 
-    let extra_bodies = moon_state
-        .as_ref()
+    let extra_bodies = moon_state.as_ref()
         .map(|ms| {
             let (rahu, ketu) = calculate_lunar_nodes(ms);
             let apogee = calculate_lunar_apogee(ms);
@@ -804,112 +656,170 @@ pub fn calculate_chart(
         })
         .unwrap_or_default();
 
-    let aspects = calculate_aspects(&bodies, &extra_bodies);
     let houses = calculate_houses(&epoch, latitude, longitude, obliquity_rad);
 
     let lst = local_sidereal_time(&epoch, longitude);
-    let sun_lon_opt = bodies.iter().find(|b| b.name == "太阳").map(|b| b.longitude);
-    let moon_lon_opt = bodies.iter().find(|b| b.name == "太阴").map(|b| b.longitude);
+    let moon_lon = bodies.iter().find(|b| b.name == "太阴").map(|b| b.longitude);
 
-    let (ascendant, midheaven, part_of_fortune, descendant, imum_coeli) = match (sun_lon_opt, moon_lon_opt) {
-        (Some(sun_lon), Some(moon_lon)) => {
-            let angles = angles::AngleData::new(lst, latitude, obliquity_rad, sun_lon, moon_lon);
-            (angles.ascendant, angles.midheaven, angles.part_of_fortune, (angles.ascendant + 180.0) % 360.0, (angles.midheaven + 180.0) % 360.0)
+    let (ascendant, midheaven, part_of_fortune, descendant, imum_coeli) = match (sun_lon, moon_lon) {
+        (Some(sl), Some(ml)) => {
+            let angles = angles::AngleData::new(lst, latitude, obliquity_rad, sl, ml);
+            (angles.ascendant, angles.midheaven, angles.part_of_fortune,
+             (angles.ascendant + 180.0) % 360.0, (angles.midheaven + 180.0) % 360.0)
         }
         _ => (0.0, 0.0, 0.0, 0.0, 0.0),
     };
 
+    let ayanamsa = calculate_precession_offset(&epoch);
+    (bodies, extra_bodies, houses, ascendant, midheaven, part_of_fortune, descendant, imum_coeli, ayanamsa, lst)
+}
+
+/// 对所有长经应用岁差修正（恒星制）
+fn apply_sidereal_correction(
+    bodies: Vec<CelestialBodyData>, extra_bodies: Vec<ExtraBodyData>, houses: Vec<HouseData>,
+    ascendant: f64, midheaven: f64, descendant: f64, imum_coeli: f64, part_of_fortune: f64,
+    ayanamsa: f64,
+) -> (Vec<CelestialBodyData>, Vec<ExtraBodyData>, Vec<HouseData>, f64, f64, f64, f64, f64) {
+    let shift = |lon: f64| -> f64 {
+        let mut l = lon - ayanamsa;
+        if l < 0.0 { l += 360.0; } else if l >= 360.0 { l -= 360.0; }
+        l
+    };
+
+    let bodies = bodies.into_iter().map(|mut b| {
+        let s = shift(b.longitude);
+        b.longitude = s;
+        let si = ((s / 30.0) as usize) % 12;
+        b.zodiac_sign = ZODIAC_SIGNS[si].to_string();
+        b.zodiac_degree = (s % 30.0).abs();
+        let (mn, _, md, _) = get_lunar_mansion(s);
+        b.mansion_name = mn.to_string();
+        b.mansion_degree = md;
+        b
+    }).collect();
+
+    let extra_bodies = extra_bodies.into_iter().map(|mut b| {
+        let s = shift(b.longitude);
+        b.longitude = s;
+        let (mn, _, md, _) = get_lunar_mansion(s);
+        b.mansion_name = mn.to_string();
+        b.mansion_degree = md;
+        b
+    }).collect();
+
+    let houses = houses.into_iter().map(|mut h| {
+        let s = shift(h.longitude);
+        h.longitude = s;
+        let (mn, _, md, _) = get_lunar_mansion(s);
+        h.mansion_name = mn.to_string();
+        h.mansion_degree = md;
+        h
+    }).collect();
+
+    (bodies, extra_bodies, houses,
+     shift(ascendant), shift(midheaven),
+     shift(descendant), shift(imum_coeli), shift(part_of_fortune))
+}
+
+pub fn calculate_chart(
+    ctx: &Almanac,
+    epoch: Epoch,
+    latitude: f64,
+    longitude: f64,
+    timezone: f64,
+    is_male: bool,
+    use_sidereal: bool,
+) -> AstrologyData {
+    let obliquity_rad = calculate_obliquity(&epoch);
+
+    // 本地时间
+    let local_jd = epoch.to_jde_utc_days() + timezone as f64 / 24.0;
+    let (year, month, day, hour, _) = utils::jd_to_gregorian(local_jd);
+
+    // === Step 1: 星体 + 宫位 + 角度 ===
+    let (bodies, extra_bodies, houses, ascendant, midheaven, part_of_fortune, descendant, imum_coeli, ayanamsa, _lst)
+        = compute_planetary_data(ctx, epoch, latitude, longitude, obliquity_rad);
+
+    // === Step 2: 恒星制偏移 ===
+    let (bodies, extra_bodies, houses, ascendant, midheaven, descendant, imum_coeli, part_of_fortune) =
+        if use_sidereal {
+            apply_sidereal_correction(bodies, extra_bodies, houses,
+                ascendant, midheaven, descendant, imum_coeli, part_of_fortune, ayanamsa)
+        } else {
+            (bodies, extra_bodies, houses, ascendant, midheaven, descendant, imum_coeli, part_of_fortune)
+        };
+
+    // === Step 3: 相位（从偏移后的位置计算）===
+    let aspects = calculate_aspects(&bodies, &extra_bodies);
+
+    // === Step 4: 八字 + 大运 ===
     let birth_utc_jd = epoch.to_jde_utc_days();
     let activation_age = calculate_dayun_activation_age(birth_utc_jd, year, is_male, ctx);
     let bazi = bazi::calculate_bazi(year, month, day, hour, is_male, activation_age);
     let day_stem_index = bazi.day_pillar.stem_index as usize;
     let hour_branch_index = bazi.hour_pillar.branch_index as usize;
-    let shen_sha = calculate_all_shensha(year, month as u8, day_stem_index, hour_branch_index);
 
-    let shiganhuayao = calculate_shiganhuayao(bazi.day_pillar.stem_index as usize);
+    // === Step 5: 神煞 + 化曜 + 安身立命 ===
+    let shen_sha = calculate_all_shensha(year, month, day_stem_index, hour_branch_index);
+    let shiganhuayao = calculate_shiganhuayao(day_stem_index);
     let asc_branch = ((ascendant / 30.0) as usize) % 12;
-    let hour_branch = bazi.hour_pillar.branch_index as usize;
     let (asc_mansion_name, _, _, _) = get_lunar_mansion(ascendant);
-    let (ming_gong_zhu, ming_du_zhu, shen_gong_zhu) = calculate_liming_anshen(asc_branch, hour_branch, asc_mansion_name);
-    let xijige = calculate_xijige(bazi.day_pillar.stem_index as usize, &bodies, &extra_bodies);
+    let (ming_gong_zhu, ming_du_zhu, shen_gong_zhu) = calculate_liming_anshen(asc_branch, hour_branch_index, asc_mansion_name);
+    let xijige = calculate_xijige(day_stem_index, &bodies, &extra_bodies);
 
+    // === Step 6: 流限 ===
     let xiaoxian_result = calculate_xiaoxian(asc_branch, 0);
     let yuexian_result = calculate_yuexian(xiaoxian_result.1, month);
     let dongweifeixian_result = calculate_dongweifeixian(asc_branch, 0, "阳男阴女");
 
-    // Star power computation
+    // === Step 7: 星力 + 宫神煞 ===
     let mut body_infos: Vec<rule_engine::BodyInfo> = Vec::new();
     for b in &bodies {
-        let sign_index = ((b.longitude / 30.0) as usize) % 12;
+        let si = ((b.longitude / 30.0) as usize) % 12;
         body_infos.push(rule_engine::BodyInfo {
             body_id: rule_engine::BodyId::from_name(&b.name).unwrap_or(rule_engine::BodyId::太阳),
-            longitude: b.longitude,
-            mansion_name: b.mansion_name.clone(),
-            sign_zodiac: format!("{}", sign_index),
+            longitude: b.longitude, mansion_name: b.mansion_name.clone(),
+            sign_zodiac: format!("{}", si),
         });
     }
     for b in &extra_bodies {
-        let sign_index = ((b.longitude / 30.0) as usize) % 12;
+        let si = ((b.longitude / 30.0) as usize) % 12;
         body_infos.push(rule_engine::BodyInfo {
             body_id: rule_engine::BodyId::from_name(&b.name).unwrap_or(rule_engine::BodyId::计都),
-            longitude: b.longitude,
-            mansion_name: b.mansion_name.clone(),
-            sign_zodiac: format!("{}", sign_index),
+            longitude: b.longitude, mansion_name: b.mansion_name.clone(),
+            sign_zodiac: format!("{}", si),
         });
     }
     let body_ming_du = rule_engine::BodyId::from_name(&ming_du_zhu).unwrap_or(rule_engine::BodyId::木星);
     let body_ming_gong = rule_engine::BodyId::from_name(&ming_gong_zhu).unwrap_or(rule_engine::BodyId::火星);
     let star_powers: Vec<rule_engine::StarPower> = body_infos.iter().map(|bi| {
-        let sign_idx: usize = bi.sign_zodiac.parse().unwrap_or(0);
-        rule_engine::compute_star_power(
-            bi.body_id, bi.longitude, &bi.mansion_name, sign_idx, month,
-            &body_infos, body_ming_du, body_ming_gong,
-        )
+        let si: usize = bi.sign_zodiac.parse().unwrap_or(0);
+        rule_engine::compute_star_power(bi.body_id, bi.longitude, &bi.mansion_name, si, month, &body_infos, body_ming_du, body_ming_gong)
     }).collect();
     let house_analyses: Vec<rule_engine::HouseAnalysis> = houses.iter().enumerate().map(|(i, h)| {
-        rule_engine::analyze_house(
-            i, h.longitude, &body_infos, year,
-            day_stem_index, body_ming_du, body_ming_gong,
-        )
+        rule_engine::analyze_house(i, h.longitude, &body_infos, year, day_stem_index, body_ming_du, body_ming_gong)
     }).collect();
 
+    // === Step 8: 构建结果 ===
     AstrologyData {
         timestamp: epoch.to_string(),
-        bodies,
-        extra_bodies,
-        aspects,
-        houses,
-        shen_sha,
-        ascendant,
-        midheaven,
-        descendant,
-        imum_coeli,
-        part_of_fortune,
-        bazi,
-        shiganhuayao,
+        bodies, extra_bodies, aspects, houses, shen_sha,
+        ascendant, midheaven, descendant, imum_coeli, part_of_fortune,
+        bazi, shiganhuayao,
         ming_zhu: ming_gong_zhu.clone(),
         shen_zhu: shen_gong_zhu.clone(),
-        ming_du_zhu,
-        ming_gong_zhu,
-        shen_gong_zhu,
-        xijige,
-        xiaoxian_result,
-        yuexian_result,
-        dongweifeixian_result,
-        zodiac_type: "回归".to_string(),
-        ayanamsa: calculate_precession_offset(&epoch),
-        dst_applied: false,
-        coordinate_system: "ecliptic".to_string(),
-        star_powers: Some(star_powers),
-        house_analyses: Some(house_analyses),
+        ming_du_zhu, ming_gong_zhu, shen_gong_zhu,
+        xijige, xiaoxian_result, yuexian_result, dongweifeixian_result,
+        zodiac_type: if use_sidereal { "恒星".to_string() } else { "回归".to_string() },
+        ayanamsa, dst_applied: false, coordinate_system: "ecliptic".to_string(),
+        star_powers: Some(star_powers), house_analyses: Some(house_analyses),
     }
 }
 
 pub fn calculate_shiganhuayao(_day_stem_index: usize) -> Vec<(String, String)> {
-    const STEMS: [&str; 10] = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"];
     const PAIR_ELEMENTS: [&str; 5] = ["土", "金", "水", "木", "火"];
     (0..10)
-        .map(|i| (STEMS[i].to_string(), PAIR_ELEMENTS[i % 5].to_string()))
+        .map(|i| (bazi::HEAVENLY_STEMS[i].to_string(), PAIR_ELEMENTS[i % 5].to_string()))
         .collect()
 }
 
@@ -989,12 +899,12 @@ pub fn calculate_xijige(
 
 pub fn calculate_xiaoxian(asc_branch_index: usize, current_age: u32) -> (String, usize) {
     let branch_index = (asc_branch_index + current_age as usize) % 12;
-    (BRANCH_NAMES[branch_index].to_string(), branch_index)
+    (bazi::EARTHLY_BRANCHES[branch_index].to_string(), branch_index)
 }
 
 pub fn calculate_yuexian(xiaoxian_branch_index: usize, current_month: u8) -> (String, usize) {
     let branch_index = (xiaoxian_branch_index + current_month as usize - 1) % 12;
-    (BRANCH_NAMES[branch_index].to_string(), branch_index)
+    (bazi::EARTHLY_BRANCHES[branch_index].to_string(), branch_index)
 }
 
 const XIAN_NAMES: [&str; 12] = [
@@ -1015,7 +925,7 @@ pub fn calculate_dongweifeixian(asc_branch_index: usize, age: u32, life_directio
         result.push((
             period_start_age,
             XIAN_NAMES[i].to_string(),
-            BRANCH_NAMES[branch_index].to_string(),
+            bazi::EARTHLY_BRANCHES[branch_index].to_string(),
         ));
     }
     result
@@ -1043,429 +953,7 @@ pub fn reverse_bazi_time(year: i32, month: u8, day: u8, target_day_stem_index: u
 
 /// Search for solar and lunar eclipses in the given year range.
 /// Uses geometric approach: checks sun-moon alignment and moon's ecliptic latitude.
-pub fn search_eclipses(
-    start_year: i32,
-    end_year: i32,
-    ctx: &Almanac,
-) -> Vec<(String, String, f64)> {
-    let mut results = Vec::new();
 
-    let start = Epoch::from_gregorian_utc_at_midnight(start_year, 1, 1);
-    let end = Epoch::from_gregorian_utc_at_midnight(end_year + 1, 1, 1);
-    let one_day = Duration::from_days(1.0);
-
-    let max_lon_diff = 18.0;
-    let max_moon_lat = 1.5;
-
-    let mut current = start;
-    while current < end {
-        let obliquity = calculate_obliquity(&current);
-        let sun_state = get_body_state(ctx, SUN_J2000, EARTH_J2000, current);
-        let moon_state = get_body_state(ctx, MOON_J2000, EARTH_J2000, current);
-
-        if let (Ok(sun), Ok(moon)) = (sun_state, moon_state) {
-            let (sun_lon, _) = cartesian_to_ecliptic(sun.radius_km, obliquity);
-            let (moon_lon, moon_lat) = cartesian_to_ecliptic(moon.radius_km, obliquity);
-
-            let raw_diff = (sun_lon - moon_lon + 360.0) % 360.0;
-            let new_moon_dist = raw_diff.min(360.0 - raw_diff);
-            let full_moon_dist = (raw_diff - 180.0).abs();
-
-            if new_moon_dist < max_lon_diff && moon_lat.abs() < max_moon_lat {
-                let lat_factor = 1.0 - (moon_lat.abs() / max_moon_lat).powi(2);
-                let lon_factor = 1.0 - (new_moon_dist / max_lon_diff).powi(2);
-                let magnitude = (lat_factor * 0.7 + lon_factor * 0.3) * 100.0;
-                let (y, m, d, _, _, _, _) = current.to_gregorian_utc();
-                results.push((format!("{:04}-{:02}-{:02}", y, m, d), "solar".into(), magnitude));
-            }
-
-            if full_moon_dist < max_lon_diff && moon_lat.abs() < max_moon_lat {
-                let lat_factor = 1.0 - (moon_lat.abs() / max_moon_lat).powi(2);
-                let lon_factor = 1.0 - (full_moon_dist / max_lon_diff).powi(2);
-                let magnitude = (lat_factor * 0.7 + lon_factor * 0.3) * 100.0;
-                let (y, m, d, _, _, _, _) = current.to_gregorian_utc();
-                results.push((format!("{:04}-{:02}-{:02}", y, m, d), "lunar".into(), magnitude));
-            }
-        }
-
-        current += one_day;
-    }
-
-    results.dedup_by(|a, b| a.0 == b.0 && a.1 == b.1);
-    results
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LunarDate {
-    pub year: i32,
-    pub month: u8,
-    pub day: u8,
-    pub is_leap: bool,
-    pub year_stem: String,
-    pub year_branch: String,
-}
-
-#[derive(Debug, Clone)]
-pub struct LunarMonthInfo {
-    pub month: u8,
-    pub is_leap: bool,
-    pub first_day_jd: f64,
-    pub days: u8,
-}
-
-#[derive(Debug, Clone)]
-pub struct LunarYearInfo {
-    pub year: i32,
-    pub months: Vec<LunarMonthInfo>,
-}
-
-fn epoch_from_jd(jd: f64) -> Epoch {
-    let ref_epoch = Epoch::from_gregorian_tai_at_midnight(2000, 1, 1);
-    let ref_jd = ref_epoch.to_jde_utc_days();
-    let offset_days = jd - ref_jd;
-    let offset_seconds = offset_days * 86400.0;
-    if offset_seconds >= 0.0 {
-        ref_epoch + hifitime::Duration::from_seconds(offset_seconds)
-    } else {
-        ref_epoch - hifitime::Duration::from_seconds(-offset_seconds)
-    }
-}
-
-fn moon_sun_elongation(jd: f64, ctx: &Almanac) -> Result<f64, String> {
-    let epoch = epoch_from_jd(jd);
-    let obl = calculate_obliquity(&epoch);
-    let sun_state = get_body_state(ctx, SUN_J2000, EARTH_J2000, epoch)?;
-    let moon_state = get_body_state(ctx, MOON_J2000, EARTH_J2000, epoch)?;
-    let (sun_lon, _) = cartesian_to_ecliptic(sun_state.radius_km, obl);
-    let (moon_lon, _) = cartesian_to_ecliptic(moon_state.radius_km, obl);
-    Ok(moon_lon - sun_lon)
-}
-
-fn normalized_elongation(jd: f64, ctx: &Almanac) -> Result<f64, String> {
-    let elong = moon_sun_elongation(jd, ctx)?;
-    let norm = ((elong + 180.0) % 360.0 + 360.0) % 360.0;
-    Ok(norm - 180.0)
-}
-
-pub fn find_new_moon(approx_jd: f64, ctx: &Almanac) -> Result<f64, String> {
-    let mut low = approx_jd - 6.0;
-    let mut high = approx_jd + 6.0;
-
-    let mut g_low = normalized_elongation(low, ctx)?;
-    let mut g_high = normalized_elongation(high, ctx)?;
-
-    let mut safety = 0;
-    while g_low > 0.0 && safety < 10 {
-        low -= 3.0;
-        g_low = normalized_elongation(low, ctx)?;
-        safety += 1;
-    }
-    safety = 0;
-    while g_high < 0.0 && safety < 10 {
-        high += 3.0;
-        g_high = normalized_elongation(high, ctx)?;
-        safety += 1;
-    }
-
-    while high - low > 1.0 / 1440.0 {
-        let mid = (low + high) / 2.0;
-        let g_mid = normalized_elongation(mid, ctx)?;
-        if g_mid > 0.0 {
-            high = mid;
-        } else {
-            low = mid;
-        }
-    }
-
-    Ok((low + high) / 2.0)
-}
-
-fn find_previous_new_moon(jd: f64, ctx: &Almanac) -> Result<f64, String> {
-    let elong_raw = moon_sun_elongation(jd, ctx)?;
-    let elong_mod = ((elong_raw % 360.0) + 360.0) % 360.0;
-    let days_back = elong_mod / 12.19;
-    find_new_moon(jd - days_back, ctx)
-}
-
-fn find_next_new_moon(jd: f64, ctx: &Almanac) -> Result<f64, String> {
-    let elong_raw = moon_sun_elongation(jd, ctx)?;
-    let elong_mod = ((elong_raw % 360.0) + 360.0) % 360.0;
-    let days_ahead = (360.0 - elong_mod) / 12.19;
-    find_new_moon(jd + days_ahead, ctx)
-}
-
-fn ymd_to_jd(year: i32, month: u8, day: u8) -> f64 {
-    let a = (14 - month as i32) / 12;
-    let y = (year + 4800 - a) as i64;
-    let m = (month as i32 + 12 * a - 3) as i64;
-    let jdn = day as i64 + (153 * m + 2) / 5 + 365 * y + y / 4 - y / 100 + y / 400 - 32045;
-    jdn as f64
-}
-
-fn jd_to_ymd(jd: f64) -> (i32, u8, u8) {
-    let z = (jd + 0.5) as i64;
-    let a = ((z as f64 - 1867216.25) / 36524.25) as i64;
-    let a2 = z + 1 + a - (a / 4);
-    let b = a2 + 1524;
-    let c = ((b as f64 - 122.1) / 365.25) as i64;
-    let d = (365.25 * c as f64) as i64;
-    let e = ((b - d) as f64 / 30.6001) as i64;
-    let day = (b - d - (30.6001 * e as f64) as i64) as u8;
-    let month = if e < 14 { (e - 1) as u8 } else { (e - 13) as u8 };
-    let year = if month > 2 { c as i32 - 4716 } else { c as i32 - 4715 };
-    (year, month, day)
-}
-
-const HEAVENLY_STEMS: [&str; 10] = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"];
-const EARTHLY_BRANCHES: [&str; 12] = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
-const CST_OFFSET: f64 = 8.0 / 24.0;
-
-const ZHONGQI_NAMES: [&str; 12] = [
-    "大寒", "雨水", "春分", "谷雨", "小满", "夏至",
-    "大暑", "处暑", "秋分", "霜降", "小雪", "冬至",
-];
-const ZHONGQI_MONTHS: [u8; 12] = [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
-
-pub fn calculate_lunar_year(year: i32, ctx: &Almanac) -> Result<LunarYearInfo, String> {
-    let terms_curr = solar_terms::calculate_solar_terms(year, ctx)?;
-    let terms_next = solar_terms::calculate_solar_terms(year + 1, ctx)?;
-
-    let dongzhi = terms_curr.iter().find(|t| t.name == "冬至").ok_or("冬至 not found")?;
-    let dongzhi_next = terms_next.iter().find(|t| t.name == "冬至").ok_or("冬至 next not found")?;
-
-    let shuo_11 = find_previous_new_moon(dongzhi.julian_day + 1.0, ctx)?;
-    let shuo_11_next = find_previous_new_moon(dongzhi_next.julian_day + 1.0, ctx)?;
-
-    let mut new_moons = vec![shuo_11];
-    loop {
-        let last = *new_moons.last().unwrap();
-        let next = find_next_new_moon(last + 1.0, ctx)?;
-        new_moons.push(next);
-        if next >= shuo_11_next - 0.5 {
-            break;
-        }
-    }
-
-    let mut prev_moons = vec![];
-    let mut current = shuo_11;
-    for _ in 0..12 {
-        let prev = find_previous_new_moon(current - 1.0, ctx)?;
-        prev_moons.push(prev);
-        current = prev;
-    }
-    prev_moons.reverse();
-
-    let all_shuos: Vec<f64> = prev_moons.into_iter()
-        .chain(new_moons.into_iter())
-        .collect();
-
-    let terms_prev = solar_terms::calculate_solar_terms(year - 1, ctx)?;
-    let all_terms = [terms_prev, terms_curr, terms_next].concat();
-
-    let mut months: Vec<LunarMonthInfo> = Vec::new();
-    for i in 0..all_shuos.len() - 1 {
-        let start = all_shuos[i];
-        let end = all_shuos[i + 1];
-        let start_cst_jdn = (start + CST_OFFSET + 0.5) as i64;
-        let end_cst_jdn = (end + CST_OFFSET + 0.5) as i64;
-        let days = (end_cst_jdn - start_cst_jdn) as u8;
-
-        let mut found_month: Option<u8> = None;
-        for (zq_idx, zq_name) in ZHONGQI_NAMES.iter().enumerate() {
-            for term in &all_terms {
-                if term.name == *zq_name && term.julian_day >= start && term.julian_day < end {
-                    found_month = Some(ZHONGQI_MONTHS[zq_idx]);
-                    break;
-                }
-            }
-            if found_month.is_some() {
-                break;
-            }
-        }
-
-        months.push(LunarMonthInfo {
-            month: found_month.unwrap_or(0),
-            is_leap: found_month.is_none(),
-            first_day_jd: start,
-            days,
-        });
-    }
-
-    let mut prev_month = 0u8;
-    for m in &mut months {
-        if m.is_leap {
-            m.month = prev_month;
-        } else {
-            prev_month = m.month;
-        }
-    }
-
-    if let Some(first_m1) = months.iter().position(|m| m.month == 1 && !m.is_leap) {
-        months = months[first_m1..].to_vec();
-    }
-
-    Ok(LunarYearInfo { year, months })
-}
-
-pub fn solar_to_lunar(year: i32, month: u8, day: u8, ctx: &Almanac) -> Result<LunarDate, String> {
-    let jd = ymd_to_jd(year, month, day);
-    let jdn_cst = (jd + CST_OFFSET + 0.5) as i64;
-
-    let terms_curr = solar_terms::calculate_solar_terms(year, ctx)?;
-    let yushui = terms_curr.iter().find(|t| t.name == "雨水").ok_or("雨水 not found")?;
-    let month1_start = find_previous_new_moon(yushui.julian_day + 1.0, ctx)?;
-    let m1_jdn_cst = (month1_start + CST_OFFSET + 0.5) as i64;
-
-    let lunar_year = if jdn_cst < m1_jdn_cst { year - 1 } else { year };
-
-    let ly = calculate_lunar_year(lunar_year, ctx)?;
-
-    for lm in &ly.months {
-        let start_jdn_cst = (lm.first_day_jd + CST_OFFSET + 0.5) as i64;
-        let end_jdn_cst = start_jdn_cst + lm.days as i64;
-        if jdn_cst >= start_jdn_cst && jdn_cst < end_jdn_cst {
-            let day_in_month = (jdn_cst - start_jdn_cst + 1) as u8;
-            let stem_idx = ((ly.year - 4) % 10 + 10) as usize % 10;
-            let branch_idx = ((ly.year - 4) % 12 + 12) as usize % 12;
-            return Ok(LunarDate {
-                year: ly.year,
-                month: lm.month,
-                day: day_in_month,
-                is_leap: lm.is_leap,
-                year_stem: HEAVENLY_STEMS[stem_idx].to_string(),
-                year_branch: EARTHLY_BRANCHES[branch_idx].to_string(),
-            });
-        }
-    }
-
-    Err("Date not found in lunar calendar".into())
-}
-
-pub fn lunar_to_solar(
-    lunar_year: i32,
-    lunar_month: u8,
-    lunar_day: u8,
-    is_leap: bool,
-    ctx: &Almanac,
-) -> Result<(i32, u8, u8), String> {
-    let ly = calculate_lunar_year(lunar_year, ctx)?;
-
-    for lm in &ly.months {
-        if lm.month == lunar_month && lm.is_leap == is_leap {
-            let jd = lm.first_day_jd + (lunar_day as f64) - 1.0;
-            return Ok(jd_to_ymd(jd + CST_OFFSET));
-        }
-    }
-
-    Err("Lunar month not found in calendar".into())
-}
-
-/// Simple magnetic declination model using polynomial approximation.
-/// Based on IGRF/WMM simplified coefficients for 2020-2025 epoch.
-/// Returns declination in degrees (positive = east, negative = west).
-pub fn magnetic_declination(latitude: f64, longitude: f64, year: f64) -> f64 {
-    let lat_rad = latitude.to_radians();
-    let lon_rad = longitude.to_radians();
-    let declination = 0.0
-        + 10.0 * (0.3 * lon_rad).sin()
-        + 5.0 * lat_rad.sin() * (lon_rad - 0.5).cos()
-        - 0.2 * (year - 2020.0)
-        - 2.0 * (2.0 * lat_rad).cos() * (lon_rad + 1.0).sin();
-    declination
-}
-
-/// Apply magnetic declination correction.
-/// true_bearing = magnetic_bearing + declination (when declination is east)
-/// If is_magnetic is true, converts magnetic → true; otherwise returns as-is.
-pub fn apply_magnetic_declination(bearing_deg: f64, declination_deg: f64, is_magnetic: bool) -> f64 {
-    if !is_magnetic {
-        return bearing_deg;
-    }
-    let corrected = bearing_deg + declination_deg;
-    ((corrected % 360.0) + 360.0) % 360.0
-}
-
-pub fn search_sun_to_mountain(
-    target_azimuth: f64,
-    start_jd: f64,
-    end_jd: f64,
-    latitude: f64,
-    longitude: f64,
-    timezone: f64,
-    ctx: &Almanac,
-) -> Vec<(f64, f64, f64)> {
-    let mut results = Vec::new();
-    let one_day = 1.0;
-    let mut current_jd = start_jd;
-
-    while current_jd < end_jd {
-        let local_noon_jd = current_jd + (12.0 - timezone) / 24.0;
-        let epoch = epoch_from_jd(local_noon_jd);
-
-        if let Ok(state) = get_body_state(ctx, SUN_J2000, EARTH_J2000, epoch) {
-            let obl = calculate_obliquity(&state.epoch);
-            let (sun_lon, sun_lat) = cartesian_to_ecliptic(state.radius_km, obl);
-            let lst = local_sidereal_time(&state.epoch, longitude);
-            let (az, alt) = get_body_horizontal(sun_lon, sun_lat, lst, latitude, obl);
-
-            let mut diff = (az - target_azimuth).abs();
-            if diff > 180.0 {
-                diff = 360.0 - diff;
-            }
-
-            if diff < 5.0 && alt > 0.0 {
-                results.push((current_jd, az, alt));
-            }
-        }
-
-        current_jd += one_day;
-    }
-
-    results.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
-    results.dedup_by(|a, b| (a.0 - b.0).abs() < 2.0);
-
-    results
-}
-
-pub fn search_sun_at_date(
-    target_azimuth: f64,
-    date_jd: f64,
-    latitude: f64,
-    longitude: f64,
-    timezone: f64,
-    ctx: &Almanac,
-) -> Vec<(f64, f64, f64)> {
-    let mut results = Vec::new();
-    let start_local = 6.0;
-    let end_local = 18.0;
-    let step_hours = 10.0 / 60.0;
-
-    let mut local_hour = start_local;
-    while local_hour <= end_local {
-        let jd = date_jd + (local_hour - timezone) / 24.0;
-        let epoch = epoch_from_jd(jd);
-
-        if let Ok(state) = get_body_state(ctx, SUN_J2000, EARTH_J2000, epoch) {
-            let obl = calculate_obliquity(&state.epoch);
-            let (sun_lon, sun_lat) = cartesian_to_ecliptic(state.radius_km, obl);
-            let lst = local_sidereal_time(&state.epoch, longitude);
-            let (az, alt) = get_body_horizontal(sun_lon, sun_lat, lst, latitude, obl);
-
-            let mut diff = (az - target_azimuth).abs();
-            if diff > 180.0 {
-                diff = 360.0 - diff;
-            }
-
-            if diff < 5.0 && alt > 0.0 {
-                results.push((jd, az, alt));
-            }
-        }
-
-        local_hour += step_hours;
-    }
-
-    results
-}
 
 #[cfg(test)]
 mod tests {
@@ -1603,14 +1091,14 @@ name: "太阴".into(), longitude: 180.0, latitude: 0.0, speed: 13.0,
 
     #[test]
     fn test_shen_sha_not_empty() {
-        let list = calculate_shen_sha(2000);
+        let list = shensha::calculate_year_shensha(2000);
         assert!(!list.is_empty(), "神煞列表不应为空");
         assert!(list.len() >= 7, "应至少有7种神煞, 实际={}", list.len());
     }
 
     #[test]
     fn test_shen_sha_2000() {
-        let list = calculate_shen_sha(2000);
+        let list = shensha::calculate_year_shensha(2000);
         assert!(list.iter().any(|s| s.name.contains("太岁")));
         assert!(list.iter().any(|s| s.name.contains("禄神")));
         assert!(list.iter().any(|s| s.name.contains("天乙")));
@@ -1726,7 +1214,7 @@ name: "太阴".into(), longitude: 180.0, latitude: 0.0, speed: 13.0,
 
     #[test]
     fn test_shensha_by_day_stem() {
-        let result = calculate_shensha_by_day_stem(0);
+        let result = shensha::calculate_day_stem_shensha(0);
         assert!(!result.is_empty(), "日干神煞不应为空");
         assert_eq!(result.len(), 6);
         assert!(result.iter().any(|s| s.name.contains("天德")));
@@ -1740,7 +1228,7 @@ name: "太阴".into(), longitude: 180.0, latitude: 0.0, speed: 13.0,
     #[test]
     fn test_shensha_by_day_stem_all() {
         for i in 0..10 {
-            let r = calculate_shensha_by_day_stem(i);
+            let r = shensha::calculate_day_stem_shensha(i);
             let has_wenchang = matches!(i, 0 | 2 | 6 | 7 | 8 | 9);
             let expected = if has_wenchang { 6 } else { 5 };
             assert_eq!(r.len(), expected, "stem={} 应有{}个神煞", i, expected);
@@ -1749,19 +1237,19 @@ name: "太阴".into(), longitude: 180.0, latitude: 0.0, speed: 13.0,
 
     #[test]
     fn test_shensha_by_hour() {
-        let result = calculate_shensha_by_hour_branch(0);
+        let result = shensha::calculate_hour_shensha(0);
         assert!(!result.is_empty(), "时辰神煞不应为空");
         assert_eq!(result[0].name, "青龙");
-        let result = calculate_shensha_by_hour_branch(6);
+        let result = shensha::calculate_hour_shensha(6);
         assert_eq!(result[0].name, "青龙");
-        let result = calculate_shensha_by_hour_branch(3);
+        let result = shensha::calculate_hour_shensha(3);
         assert_eq!(result[0].name, "朱雀");
     }
 
     #[test]
     fn test_shensha_by_hour_all() {
         for i in 0..12 {
-            let r = calculate_shensha_by_hour_branch(i);
+            let r = shensha::calculate_hour_shensha(i);
             assert_eq!(r.len(), 1, "每个时辰应有1个神煞, branch={}", i);
             assert_eq!(r[0].category, "时辰");
         }
@@ -2036,8 +1524,9 @@ name: "太阴".into(), longitude: 180.0, latitude: 0.0, speed: 13.0,
     fn test_astrology_data_coordinate_system() {
         let epoch = Epoch::from_tdb_seconds(0.0);
         if let Ok(ctx) = load_almanac(concat!(env!("CARGO_MANIFEST_DIR"), "/../../assets/bsp/de440.bsp")) {
-            let data = calculate_chart(&ctx, epoch, 40.0, -74.0, -5.0, true);
+            let data = calculate_chart(&ctx, epoch, 40.0, -74.0, -5.0, true, false);
             assert_eq!(data.coordinate_system, "ecliptic");
+            assert_eq!(data.zodiac_type, "回归");
         }
     }
 

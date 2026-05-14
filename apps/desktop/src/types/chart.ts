@@ -98,7 +98,9 @@ export interface ChartData {
   xiaoxian_result: [string, number];
   yuexian_result: [string, number];
   dongweifeixian_result: [number, string, string][];
-  zodiac_type: string;
+   star_powers?: StarPower[];
+   house_analyses?: HouseAnalysis[];
+   zodiac_type: string;
   ayanamsa: number;
   dst_applied: boolean;
 }
@@ -114,6 +116,8 @@ export interface BirthInfo {
   latitude: number;
   longitude: number;
   dst_applied: boolean;
+  isMale?: boolean;
+  use_sidereal?: boolean;
 }
 
 export interface ElectionalInfo extends BirthInfo {
@@ -121,9 +125,35 @@ export interface ElectionalInfo extends BirthInfo {
   event_type?: string;
 }
 
-export interface HouseData {
-  index: number;
-  longitude: number;
-  mansion_name: string;
-  mansion_degree: number;
+export interface MansionInfo {
+  name: string;
+  direction: string;
+  width: number;
 }
+
+export interface HouseData {
+   index: number;
+   longitude: number;
+   mansion_name: string;
+   mansion_degree: number;
+ }
+
+export interface StarPower {
+   body_name: string;
+   升殿: boolean; 入垣: boolean; 季星: boolean;
+   失躔: boolean; 失垣: boolean;
+   base_power: number;
+   generating_bonus: number;
+   overcoming_penalty: number;
+   total_power: number;
+   classification: string;
+ }
+
+export interface HouseAnalysis {
+   house_index: number;
+   house_name: string;
+   auspicious_spirits: string[];
+   inauspicious_spirits: string[];
+   transformation_stars: string[];
+   life_cycle_annotations: string[];
+ }
