@@ -4,6 +4,8 @@
 
 Moira（Μοῖραι — 希腊命运三女神之名）是一款开源的**中国传统占星学桌面应用**，基于 JPL DE440 高精度星历数据，提供完整的七政四馀星盘计算、四柱八字排盘、神煞推演与星力分析。面向中国传统命理学研究者、天文爱好者与命理软件开发者的深度探索工具。
 
+本项目是**原 Java 版 Moira** 的 Rust + Tauri 重制版，从桌面端移植到现代跨平台架构，同时继承和发展了原版的排盘逻辑与领域模型。
+
 中文名暂定：**默伊拉**
 
 ---
@@ -239,7 +241,11 @@ cd apps/desktop && npx tauri build
 
 ## 许可证
 
-MIT License
+GNU General Public License v2 (or later)
+
+本程式是自由軟體，您可以遵照自由軟體基金會 (Free Software Foundation) 出版的 **GNU 通用公共許可證條款 (GNU General Public License) 第二版** 來修改和重新發佈這一程式，或者自由選擇使用任何更新的版本。
+
+This program is free software; you can redistribute it and/or modify it under the terms of the **GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version**.
 
 ---
 
