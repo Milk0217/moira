@@ -114,6 +114,7 @@ moira/
 | 星盘渲染 | **react-konva** (Canvas) |
 | 天文计算 | **moira-core** (Rust 库) |
 | 星历数据 | **JPL DE440** (anise 库) |
+| Rust 版本 | **1.95** (edition 2024) |
 | 版本控制 | jj (Jujutsu) / Git |
 
 ---
@@ -122,7 +123,7 @@ moira/
 
 ### 前置依赖
 
-- [Rust](https://rustup.rs/) (edition 2024)
+- [Rust](https://rustup.rs/) 1.95+ (edition 2024)
 - [Node.js](https://nodejs.org/) >= 18
 - Tauri v2 系统依赖（[参考文档](https://v2.tauri.app/start/prerequisites/)）
 
