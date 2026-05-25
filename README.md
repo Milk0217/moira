@@ -241,11 +241,17 @@ cd apps/desktop && npx tauri build
 
 ## 许可证
 
-GNU General Public License v2 (or later)
+GNU General Public License v3
 
-本程式是自由軟體，您可以遵照自由軟體基金會 (Free Software Foundation) 出版的 **GNU 通用公共許可證條款 (GNU General Public License) 第二版** 來修改和重新發佈這一程式，或者自由選擇使用任何更新的版本。
+Copyright (C) 2025 Milk0217
 
-This program is free software; you can redistribute it and/or modify it under the terms of the **GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version**.
+本程式是自由軟體，您可以遵照自由軟體基金會 (Free Software Foundation) 出版的 **GNU 通用公共許可證條款第三版 (GNU General Public License v3)** 來修改和重新發佈這一程式。
+
+This program is free software: you can redistribute it and/or modify it under the terms of the **GNU General Public License as published by the Free Software Foundation, either version 3 of the License**.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+*本專案源自 Java 版 Moira（GPL v2 or later），根據原許可證條款可選擇後續版本進行授權。*
 
 ---
 
